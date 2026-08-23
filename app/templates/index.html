@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eco Loop - Smart Waste Management & AI Surveillance Network</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Leaflet Map CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- HTML5 QR Code Scanner -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script>
+    window.ECO_LOOP_GOOGLE_CLIENT_ID = {{ google_client_id|default('')|tojson }};
+  </script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body class="bg-slate-950 text-slate-100 antialiased selection:bg-emerald-500 selection:text-white">
+
+  <!-- Top Navigation Bar -->
+  <header class="sticky top-0 z-40 bg-slate-900/80 backdrop-blur-md border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+          <i data-lucide="recycle" class="w-6 h-6 text-white"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-lg font-extrabold tracking-tight bg-gradient-to-r from-emerald-400 to-teal-200 bg-clip-text text-transparent">ECO LOOP</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 font-mono border border-emerald-800/80 font-bold">SMART WASTE AI</span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden sm:block">Municipal Waste Credits & CCTV Penalty Network</p>
+        </div>
+      </div>
+
+      <!-- Role Mode Display (Strict RBAC) -->
+      <div id="currentRoleHeaderBadge" class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 shadow-inner">
+        <span id="roleHeaderIcon" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span id="roleHeaderText" class="text-xs font-bold text-slate-200 uppercase tracking-wider">Citizen Portal</span>
+      </div>
+
+      <!-- Right User Controls -->
+      <div class="flex items-center gap-2">
+        <!-- Google Sign-In / Connect Button -->
+        <button onclick="openGoogleSignInModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold border border-slate-700 transition">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+          <span class="hidden sm:inline">Google Sign-In</span>
+        </button>
+
+        <!-- Active User Profile & 1-Click Role Switcher -->
+        <div class="relative">
+          <button onclick="toggleUserDropdown()" class="flex items-center gap-2 p-1.5 bg-slate-800/80 hover:bg-slate-800 rounded-xl border border-slate-700/80 transition">
+            <img id="headerUserAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150" class="w-7 h-7 rounded-full object-cover border border-emerald-500/50" />
+            <div class="text-left hidden lg:block pr-1">
+              <div id="headerUserName" class="text-xs font-bold text-slate-200 leading-tight">Johnathan Doe</div>
+              <div class="flex items-center gap-1.5">
+                <span id="headerUserRoleBadge" class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 font-bold uppercase">CITIZEN</span>
+                <span id="headerUserEmail" class="text-[10px] text-slate-400 font-mono truncate max-w-[110px]">john.citizen@gmail.com</span>
+              </div>
+            </div>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
+          </button>
+
+          <!-- Switcher Dropdown Menu -->
+          <div id="userDropdownMenu" class="hidden absolute right-0 mt-2 w-72 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 p-2 space-y-1">
+            <div class="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Switch Persona / Test Role</div>
+            <div id="userSwitcherOptions" class="space-y-1">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- ========================================================================= -->
+    <!-- 1. CITIZEN PORTAL VIEW -->
+    <!-- ========================================================================= -->
+    <div id="citizenView" class="space-y-6">
+
+      <!-- Citizen Top Metric Cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- EcoCredits Balance -->
+        <div class="glass-card rounded-2xl p-4 border border-emerald-500/30 relative overflow-hidden bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+            <span>EcoCredits Balance</span>
+            <i data-lucide="coins" class="w-4 h-4 text-emerald-400"></i>
+          </div>
+          <div class="flex items-baseline gap-1.5">
+            <span id="citizenCreditsBalance" class="text-2xl lg:text-3xl font-extrabold text-emerald-400 font-mono">0.0</span>
+            <span class="text-xs text-emerald-500/80 font-bold">Credits</span>
+          </div>
+          <div class="mt-2 flex items-center gap-1.5 text-[11px] text-slate-300">
+            <span class="px-1.5 py-0.5 rounded bg-emerald-900/60 text-emerald-300 font-semibold" id="citizenEcoTier">Silver Eco-Advocate</span>
+          </div>
+        </div>
+
+        <!-- Waste Recycled -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-800">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+            <span>Total Recycled</span>
+            <i data-lucide="scale" class="w-4 h-4 text-teal-400"></i>
+          </div>
+          <div id="citizenTotalWasteKg" class="text-2xl lg:text-3xl font-extrabold text-slate-100 font-mono">0 kg</div>
+          <div class="mt-2 text-[11px] text-teal-400 font-semibold flex items-center gap-1">
+            <i data-lucide="trending-up" class="w-3 h-3"></i> Segregated collections
+          </div>
+        </div>
+
+        <!-- Carbon Offset -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-800">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+            <span>CO₂ Reduced</span>
+            <i data-lucide="leaf" class="w-4 h-4 text-emerald-400"></i>
+          </div>
+          <div id="citizenCo2Offset" class="text-2xl lg:text-3xl font-extrabold text-slate-100 font-mono">0 kg CO₂</div>
+          <div class="mt-2 text-[11px] text-slate-400">Diverted from city landfills</div>
+        </div>
+
+        <!-- Outstanding Penalties -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-800">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+            <span>Outstanding Fines</span>
+            <i data-lucide="alert-octagon" class="w-4 h-4 text-amber-400"></i>
+          </div>
+          <div id="citizenUnpaidFines" class="text-2xl lg:text-3xl font-extrabold text-amber-400 font-mono">₹0</div>
+          <div id="citizenUnpaidCount" class="mt-2 text-[11px] text-amber-300 font-semibold">0 active violations</div>
+        </div>
+      </div>
+
+      <!-- Main Citizen Layout: QR Pass Card + Littering Penalties Hub -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEFT: Dynamic QR Eco-Pass Digital Card (5 Cols) -->
+        <div class="lg:col-span-5 space-y-4">
+          <div id="printableEcoPass" class="eco-pass-card rounded-3xl p-6 text-white shadow-2xl border border-emerald-400/30 relative">
+            
+            <!-- Pass Header -->
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-white/20 backdrop-blur flex items-center justify-center">
+                  <i data-lucide="qr-code" class="w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                  <div class="text-xs font-extrabold tracking-wider uppercase text-emerald-200">MUNICIPAL ECO-PASS</div>
+                  <div class="text-[10px] text-emerald-100/70">Doorstep Waste Collection ID</div>
+                </div>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-400/20 text-emerald-200 border border-emerald-300/30">
+                VERIFIED ● ACTIVE
+              </span>
+            </div>
+
+            <!-- QR Code Center Display -->
+            <div class="bg-white rounded-2xl p-4 shadow-inner flex flex-col items-center justify-center my-3">
+              <img id="passQrImage" src="" alt="Citizen QR Code" class="w-44 h-44 object-contain" />
+              <div class="text-center mt-2">
+                <span class="text-[11px] font-bold font-mono text-slate-800" id="passCitizenId">ECO-CTZ-1001</span>
+                <p class="text-[9px] text-slate-500">Scan via collector mobile unit to log trash handover</p>
+              </div>
+            </div>
+
+            <!-- Citizen Details on Pass -->
+            <div class="space-y-1.5 text-xs text-emerald-50 mt-4 pt-3 border-t border-emerald-500/40">
+              <div class="flex justify-between">
+                <span class="text-emerald-200">Citizen Name:</span>
+                <span id="passCitizenName" class="font-bold text-white">Johnathan Doe</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-emerald-200">Municipal Ward:</span>
+                <span id="passCitizenWard" class="font-medium text-white">Ward 4 - Green Meadows</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-emerald-200">Google Account:</span>
+                <span id="passCitizenEmail" class="font-mono text-[11px] text-emerald-200">john.citizen@gmail.com</span>
+              </div>
+            </div>
+
+            <!-- Card Actions -->
+            <div class="flex items-center gap-2 mt-5">
+              <button onclick="downloadEcoPassImage()" class="flex-1 py-2 px-3 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 backdrop-blur">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i> Download QR
+              </button>
+              <button onclick="printEcoPass()" class="flex-1 py-2 px-3 bg-emerald-950/60 hover:bg-emerald-950 text-emerald-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border border-emerald-400/30">
+                <i data-lucide="printer" class="w-3.5 h-3.5"></i> Print Badge
+              </button>
+            </div>
+          </div>
+
+          <!-- Call Doorstep Waste Collector Action Card -->
+          <div class="glass-card rounded-2xl p-4 border border-emerald-500/40 bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="phone-call" class="w-4 h-4 text-emerald-400"></i> On-Demand Service
+              </span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-900/80 text-emerald-200 border border-emerald-700 font-semibold font-mono">DOORSTEP PICKUP</span>
+            </div>
+            
+            <p class="text-xs text-slate-300">Have segregated waste ready at home? Call the municipal waste collector to your doorstep and earn instant EcoCredits!</p>
+
+            <button onclick="openCallCollectorModal()" class="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-700/30 transition flex items-center justify-center gap-2">
+              <i data-lucide="truck" class="w-4 h-4"></i> 📞 Call Waste Collector Now
+            </button>
+
+            <!-- Active Pickup Live Status Tracker -->
+            <div id="citizenActivePickupTracker" class="hidden pt-2 border-t border-emerald-800/40">
+              <!-- Dynamically populated if request is pending/active -->
+            </div>
+          </div>
+
+          <!-- Quick Service Buttons -->
+          <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-2">
+            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Community Tools</h4>
+            <button onclick="Swal.fire({icon: 'info', title: 'Report Littering Hotspot', text: 'Municipal sanitary squad has been notified of your report.', background: '#1e293b', color: '#f8fafc'})" class="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700 transition flex items-center justify-between">
+              <span class="flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-amber-400"></i> Report Overflowing Bin / Litter Hotspot</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-slate-400"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- RIGHT: Littering Penalties & CCTV Evidence Hub (7 Cols) -->
+        <div class="lg:col-span-7 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+                <i data-lucide="video" class="w-5 h-5 text-red-400"></i> CCTV Littering Penalty Tracking
+              </h3>
+              <p class="text-xs text-slate-400">Surveillance cameras automatically allot penalties for illegal road or public littering.</p>
+            </div>
+            <span class="text-xs font-mono text-slate-400">Live AI Feed</span>
+          </div>
+
+          <!-- Penalty Cards Grid -->
+          <div id="citizenPenaltiesList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Dynamically rendered -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- EcoCredits Reward Store Marketplace -->
+      <div class="glass-card rounded-2xl p-6 border border-slate-800 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+              <i data-lucide="gift" class="w-5 h-5 text-emerald-400"></i> EcoRewards Marketplace
+            </h3>
+            <p class="text-xs text-slate-400">Spend accumulated waste credits on municipal tax waivers, transit passes, and vouchers.</p>
+          </div>
+          <div class="flex items-center gap-1.5 px-3 py-1 bg-emerald-950/80 rounded-lg border border-emerald-800 text-xs text-emerald-300 font-bold">
+            <i data-lucide="wallet" class="w-3.5 h-3.5"></i> Redeem with EcoCredits
+          </div>
+        </div>
+
+        <div id="rewardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+          <!-- Dynamically loaded -->
+        </div>
+
+        <!-- User's Redeemed Vouchers -->
+        <div class="pt-4 border-t border-slate-800/80">
+          <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">My Active Redeemed Vouchers</h4>
+          <div id="citizenRedemptionsList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <!-- Dynamically rendered -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Waste Handover Collection History Table -->
+      <div class="glass-card rounded-2xl p-6 border border-slate-800 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+              <i data-lucide="history" class="w-5 h-5 text-teal-400"></i> Doorstep Waste Handover Ledger
+            </h3>
+            <p class="text-xs text-slate-400">History of segregated waste handed over to municipal collectors with credit breakdown.</p>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="text-slate-400 border-b border-slate-800 text-xs uppercase font-bold">
+                <th class="py-2.5 px-3">Collection Code</th>
+                <th class="py-2.5 px-3">Waste Category</th>
+                <th class="py-2.5 px-3">Weight</th>
+                <th class="py-2.5 px-3">Date</th>
+                <th class="py-2.5 px-3 text-right">Credits Earned</th>
+              </tr>
+            </thead>
+            <tbody id="citizenCollectionsTableBody" class="divide-y divide-slate-800/60">
+              <!-- Dynamically rendered -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 2. COLLECTOR FIELD PORTAL VIEW -->
+    <!-- ========================================================================= -->
+    <div id="collectorView" class="hidden space-y-6">
+
+      <!-- Collector KPIs -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="glass-card rounded-2xl p-4 border border-amber-500/30 bg-gradient-to-br from-amber-950/40 via-slate-900 to-slate-900">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+            <span>Today's Waste Collected</span>
+            <i data-lucide="scale" class="w-4 h-4 text-amber-400"></i>
+          </div>
+          <div id="collectorTodayKg" class="text-2xl lg:text-3xl font-extrabold text-amber-400 font-mono">0 kg</div>
+          <div class="mt-2 text-[11px] text-slate-300">Ward 4 field route</div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 border border-slate-800">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+            <span>Credits Awarded Today</span>
+            <i data-lucide="coins" class="w-4 h-4 text-emerald-400"></i>
+          </div>
+          <div id="collectorTodayCredits" class="text-2xl lg:text-3xl font-extrabold text-slate-100 font-mono">0</div>
+          <div class="mt-2 text-[11px] text-emerald-400 font-semibold">Credited instantly to citizens</div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 border border-slate-800">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+            <span>Citizens Served Today</span>
+            <i data-lucide="users" class="w-4 h-4 text-teal-400"></i>
+          </div>
+          <div id="collectorTodayCount" class="text-2xl lg:text-3xl font-extrabold text-slate-100 font-mono">0</div>
+          <div class="mt-2 text-[11px] text-slate-400">Doorstep pickups</div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 border border-slate-800">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+            <span>All-Time Pickups</span>
+            <i data-lucide="award" class="w-4 h-4 text-purple-400"></i>
+          </div>
+          <div id="collectorAllTimeKg" class="text-2xl lg:text-3xl font-extrabold text-slate-100 font-mono">0 kg</div>
+          <div class="mt-2 text-[11px] text-slate-400">Collector badge certified</div>
+        </div>
+      </div>
+
+      <!-- Collector Scanner & Waste Weighing Workspace -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEFT: Scanner & Citizen Identification (6 Cols) -->
+        <div class="lg:col-span-6 space-y-4">
+          <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+                <i data-lucide="scan" class="w-5 h-5 text-amber-400"></i> Scan Citizen Eco-Pass QR
+              </h3>
+              <button id="btnToggleScanner" onclick="startQRScanner((decoded) => { document.getElementById('collectorCitizenInput').value = decoded; selectCitizenForCollection(decoded, 'Scanned Citizen', 'Ward 4', 0); })" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+                📷 Start Camera QR Scanner
+              </button>
+            </div>
+
+            <!-- Camera Video Feed Container -->
+            <div id="qrReaderContainer" class="hidden viewfinder-box bg-black rounded-xl p-2 relative">
+              <div id="qrReader" class="w-full"></div>
+              <div class="viewfinder-scanline"></div>
+            </div>
+
+            <!-- Manual Citizen Search / Input -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Enter Citizen ID or Scanned QR Token</label>
+              <div class="flex gap-2">
+                <input type="text" id="collectorCitizenInput" placeholder="e.g. ECO-CTZ-1001 or paste QR string..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-amber-500" />
+                <button onclick="fetch('/api/collector/scan', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({raw_data: document.getElementById('collectorCitizenInput').value}) }).then(r=>r.json()).then(d=>{ if(d.success) selectCitizenForCollection(d.citizen.citizen_id, d.citizen.full_name, d.citizen.ward, d.citizen.eco_credits); else Swal.fire({icon:'error', text: d.detail, background: '#1e293b', color: '#f8fafc'}); })" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold border border-slate-700 transition">
+                  Identify
+                </button>
+              </div>
+            </div>
+
+            <!-- Quick Select Citizen List (For Instant Demo Testing) -->
+            <div class="pt-2">
+              <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Quick Demo: Select Citizen</span>
+              <div id="quickCitizenSelector" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                <!-- Dynamically populated with citizens -->
+              </div>
+            </div>
+
+            <!-- Scanned Citizen Info Card -->
+            <div id="scannedCitizenCard" class="hidden p-4 rounded-xl bg-emerald-950/40 border border-emerald-700/60 flex items-center justify-between">
+              <div>
+                <div class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">Verified Citizen</div>
+                <div id="scannedCitizenName" class="text-sm font-bold text-slate-100">Johnathan Doe</div>
+                <div class="text-xs text-slate-300 font-mono" id="scannedCitizenId">ECO-CTZ-1001</div>
+                <div class="text-xs text-slate-400" id="scannedCitizenWard">Ward 4 - Green Meadows</div>
+              </div>
+              <div class="text-right">
+                <div class="text-[10px] text-slate-400">Current Balance</div>
+                <div id="scannedCitizenBalance" class="text-base font-extrabold text-emerald-400 font-mono">340.0 EcoCredits</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- RIGHT: Waste Logging & Credit Calculator Form (6 Cols) -->
+        <div class="lg:col-span-6 space-y-4">
+          <div class="glass-card rounded-2xl p-6 border border-slate-800 space-y-4">
+            <div>
+              <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+                <i data-lucide="package-check" class="w-5 h-5 text-emerald-400"></i> Weigh Waste & Award Credits
+              </h3>
+              <p class="text-xs text-slate-400">Select segregated category, input scale weight, and transfer EcoCredits instantly.</p>
+            </div>
+
+            <!-- Waste Category Dropdown -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Waste Category & Municipal Reward Rate</label>
+              <select id="collectorWasteTypeSelect" onchange="updateCollectionCreditPreview()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-200 font-semibold focus:outline-none focus:border-emerald-500">
+                <!-- Dynamically loaded from rates -->
+              </select>
+            </div>
+
+            <!-- Weight Input (kg) -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Measured Scale Weight (in Kilograms)</label>
+              <div class="relative">
+                <input type="number" id="collectorWeightInput" step="0.1" min="0.1" placeholder="e.g. 5.5" oninput="updateCollectionCreditPreview()" class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-3 pr-12 py-2.5 text-base font-bold font-mono text-emerald-400 focus:outline-none focus:border-emerald-500" />
+                <span class="absolute right-3 top-2.5 text-xs text-slate-400 font-bold">KG</span>
+              </div>
+            </div>
+
+            <!-- Instant Credits Calculation Display -->
+            <div class="p-4 rounded-xl bg-gradient-to-r from-emerald-950/80 to-teal-950/80 border border-emerald-700/60 flex items-center justify-between">
+              <div>
+                <span class="text-[11px] text-emerald-300 font-bold uppercase tracking-wider">Reward Credits to Allot</span>
+                <p class="text-xs text-slate-400">Calculated based on weight × rate/kg</p>
+              </div>
+              <div id="collectorCreditsPreview" class="text-2xl font-extrabold text-emerald-300 font-mono">
+                0.0 Credits
+              </div>
+            </div>
+
+            <!-- Optional Collector Notes -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Collector Field Notes (Optional)</label>
+              <input type="text" id="collectorNotesInput" placeholder="e.g. Clean segregated HDPE plastic bottles" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-slate-600" />
+            </div>
+
+            <!-- Submit Button -->
+            <button onclick="submitWasteCollection()" class="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2">
+              <i data-lucide="check-circle" class="w-4 h-4"></i> Confirm Handover & Transfer Credits
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Collector's Incoming On-Demand Pickup Requests Queue -->
+      <div class="glass-card rounded-2xl p-6 border border-amber-500/40 bg-gradient-to-br from-amber-950/20 via-slate-900 to-slate-900 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+              <i data-lucide="bell-ring" class="w-5 h-5 text-amber-400 animate-bounce"></i> Citizen On-Demand Pickup Calls (Ward Queue)
+            </h3>
+            <p class="text-xs text-slate-400">Live doorstep requests called in by residents. Click 'Accept & Weigh' to load citizen directly into the weighing scale.</p>
+          </div>
+          <span class="text-xs px-2.5 py-1 rounded bg-amber-950 text-amber-300 border border-amber-800 font-mono font-bold">LIVE DISPATCH</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="text-slate-400 border-b border-slate-800 text-xs uppercase font-bold">
+                <th class="py-2.5 px-3">Request Code</th>
+                <th class="py-2.5 px-3">Citizen & Address</th>
+                <th class="py-2.5 px-3">Waste Category</th>
+                <th class="py-2.5 px-3">Est. Weight</th>
+                <th class="py-2.5 px-3">Urgency</th>
+                <th class="py-2.5 px-3">Status</th>
+                <th class="py-2.5 px-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="collectorPickupRequestsBody" class="divide-y divide-slate-800/60">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Collector's Daily Activity Log Table -->
+      <div class="glass-card rounded-2xl p-6 border border-slate-800 space-y-4">
+        <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+          <i data-lucide="clipboard-list" class="w-5 h-5 text-amber-400"></i> My Today's Collection Activity
+        </h3>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="text-slate-400 border-b border-slate-800 text-xs uppercase font-bold">
+                <th class="py-2.5 px-3">Collection ID</th>
+                <th class="py-2.5 px-3">Citizen</th>
+                <th class="py-2.5 px-3">Category</th>
+                <th class="py-2.5 px-3">Weight</th>
+                <th class="py-2.5 px-3 text-right">Credits Transferred</th>
+              </tr>
+            </thead>
+            <tbody id="collectorRecentLogsBody" class="divide-y divide-slate-800/60">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 3. ADMINISTRATOR COMMAND CENTER VIEW -->
+    <!-- ========================================================================= -->
+    <div id="adminView" class="hidden space-y-6">
+
+      <!-- Admin Top Municipal KPI Cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- CCTV Network Health -->
+        <div class="glass-card rounded-2xl p-4 border border-purple-500/30 bg-gradient-to-br from-purple-950/40 via-slate-900 to-slate-900">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+            <span>CCTV Surveillance Health</span>
+            <i data-lucide="cctv" class="w-4 h-4 text-purple-400"></i>
+          </div>
+          <div id="adminCamHealthPct" class="text-2xl lg:text-3xl font-extrabold text-purple-400 font-mono">100%</div>
+          <div id="adminDamagedCams" class="mt-2 text-[11px] text-red-400 font-semibold">0 Damaged / 0 Offline</div>
+        </div>
+
+        <!-- Municipal Recycled Waste -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-800">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+            <span>Total Recycled Waste</span>
+            <i data-lucide="recycle" class="w-4 h-4 text-emerald-400"></i>
+          </div>
+          <div id="adminTotalWasteTons" class="text-2xl lg:text-3xl font-extrabold text-slate-100 font-mono">0 Tons</div>
+          <div class="mt-2 text-[11px] text-emerald-400">City-wide diversion rate: 76.4%</div>
+        </div>
+
+        <!-- Total Violations Logged -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-800">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+            <span>Littering Violations</span>
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i>
+          </div>
+          <div id="adminTotalViolations" class="text-2xl lg:text-3xl font-extrabold text-slate-100 font-mono">0</div>
+          <div id="adminOverdueDefaulters" class="mt-2 text-[11px] text-red-400 font-semibold">0 Overdue Defaulters</div>
+        </div>
+
+        <!-- Penalty Recovery Rate -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-800">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+            <span>Fine Recovery Rate</span>
+            <i data-lucide="check-circle" class="w-4 h-4 text-teal-400"></i>
+          </div>
+          <div id="adminRecoveryRate" class="text-2xl lg:text-3xl font-extrabold text-teal-400 font-mono">0%</div>
+          <div id="adminTotalDefaultFines" class="mt-2 text-[11px] text-slate-400 font-mono">Outstanding: ₹0</div>
+        </div>
+      </div>
+
+      <!-- CCTV SURVEILLANCE & AI DETECTION SIMULATOR SECTION -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Interactive Map & Camera Health Diagnostic (7 Cols) -->
+        <div class="lg:col-span-7 space-y-4">
+          <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+                  <i data-lucide="map" class="w-5 h-5 text-emerald-400"></i> Municipal CCTV Surveillance Map
+                </h3>
+                <p class="text-xs text-slate-400">Live surveillance grid. Click any camera pin to view health diagnostics.</p>
+              </div>
+              <div class="flex items-center gap-2 text-[11px]">
+                <span class="flex items-center gap-1 text-emerald-400 font-semibold"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Active</span>
+                <span class="flex items-center gap-1 text-red-400 font-semibold"><span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> Damaged</span>
+                <span class="flex items-center gap-1 text-amber-400 font-semibold"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Offline</span>
+              </div>
+            </div>
+
+            <!-- Leaflet Map Container -->
+            <div id="cctvMapContainer" class="w-full h-72 rounded-xl overflow-hidden border border-slate-700/80 z-0"></div>
+
+            <!-- Camera Diagnostics Grid -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Surveillance Cameras Status (<span id="adminTotalCams">0</span> Units)</h4>
+              </div>
+              <div id="adminCamerasGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <!-- Dynamically rendered -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Live AI Detection Simulator & Waste Analytics (5 Cols) -->
+        <div class="lg:col-span-5 space-y-4">
+
+          <!-- AI Littering Detection Simulator Card -->
+          <div id="aiSimulatorCard" class="glass-card rounded-2xl p-5 border border-red-500/30 bg-gradient-to-br from-red-950/20 via-slate-900 to-slate-900 space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+                <i data-lucide="sparkles" class="w-5 h-5 text-red-400"></i> AI Optical Detection Simulator
+              </h3>
+              <span class="text-[10px] px-2 py-0.5 rounded font-mono font-bold bg-red-950 text-red-300 border border-red-800">DEMO TOOL</span>
+            </div>
+            <p class="text-xs text-slate-400">Simulate a real-time CCTV optical detection event. This automatically captures evidence and allots a statutory penalty to the citizen.</p>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Select CCTV Surveillance Camera</label>
+              <select id="simCameraSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200">
+                <!-- Populated from operational cams -->
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Select Citizen Suspect</label>
+              <select id="simUserSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200">
+                <!-- Populated from registered citizens -->
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Violation Category</label>
+              <select id="simViolationSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200">
+                <option value="Road Dumping">Road Dumping (₹750 Fine)</option>
+                <option value="Public Littering">Public Littering (₹500 Fine)</option>
+                <option value="Plastic Burning">Plastic Burning & Open Combustion (₹1,500 Fine)</option>
+                <option value="Non-Segregated Dumping">Non-Segregated Waste Dumping (₹400 Fine)</option>
+                <option value="Unauthorized Waste Discard">Unauthorized Commercial Discard (₹600 Fine)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Simulation Notes / Frame Tag</label>
+              <input type="text" id="simNotesInput" value="Optical AI flagged domestic waste discard" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200" />
+            </div>
+
+            <button onclick="runAIDetectionSimulation()" class="w-full py-2.5 bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-red-600/30 transition flex items-center justify-center gap-2">
+              <i data-lucide="zap" class="w-4 h-4"></i> Trigger Live AI Detection & Issue Penalty
+            </button>
+          </div>
+
+          <!-- Municipal Waste Composition Chart -->
+          <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-3">
+            <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2">
+              <i data-lucide="pie-chart" class="w-4 h-4 text-emerald-400"></i> Waste Category Breakdown
+            </h3>
+            <div class="h-48 relative">
+              <canvas id="wasteAnalyticsChart"></canvas>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- PENALTY DEFAULTERS WATCHLIST & AREA LEDGER -->
+      <div class="glass-card rounded-2xl p-6 border border-slate-800 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+              <i data-lucide="alert-octagon" class="w-5 h-5 text-red-400"></i> Penalty Defaulters Watchlist
+            </h3>
+            <p class="text-xs text-slate-400">Citizens with delayed or overdue penalties. Dispatch legal notices and monitor default charges.</p>
+          </div>
+          <span class="px-3 py-1 bg-red-950/80 border border-red-800 text-red-300 rounded-lg text-xs font-bold font-mono">
+            Automated Late Fee Engine Active
+          </span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="text-slate-400 border-b border-slate-800 text-xs uppercase font-bold">
+                <th class="py-2.5 px-3">Violation Code</th>
+                <th class="py-2.5 px-3">Citizen Defaulter</th>
+                <th class="py-2.5 px-3">Offense</th>
+                <th class="py-2.5 px-3">Overdue Period</th>
+                <th class="py-2.5 px-3">Total Payable (Fine + Late)</th>
+                <th class="py-2.5 px-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="adminDefaultersTableBody" class="divide-y divide-slate-800/60">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CCTV MAINTENANCE & REPAIR TICKETS -->
+      <div class="glass-card rounded-2xl p-6 border border-slate-800 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+              <i data-lucide="wrench" class="w-5 h-5 text-amber-400"></i> Camera Maintenance & Repair Tickets
+            </h3>
+            <p class="text-xs text-slate-400">Manage repair requests for damaged optical sensors, network loss, and physical lens breakage.</p>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="text-slate-400 border-b border-slate-800 text-xs uppercase font-bold">
+                <th class="py-2.5 px-3">Ticket ID</th>
+                <th class="py-2.5 px-3">CCTV Camera</th>
+                <th class="py-2.5 px-3">Fault Category</th>
+                <th class="py-2.5 px-3">Description</th>
+                <th class="py-2.5 px-3">Status</th>
+                <th class="py-2.5 px-3 text-right">Technician Action</th>
+              </tr>
+            </thead>
+            <tbody id="adminTicketsTableBody" class="divide-y divide-slate-800/60">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ALL AREA PENALTIES LEDGER -->
+      <div class="glass-card rounded-2xl p-6 border border-slate-800 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+              <i data-lucide="file-text" class="w-5 h-5 text-slate-300"></i> All Municipal Violations Ledger
+            </h3>
+            <p class="text-xs text-slate-400">Complete audit trail of all optical and sensor detections.</p>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="text-slate-400 border-b border-slate-800 text-xs uppercase font-bold">
+                <th class="py-2.5 px-3">Violation Code</th>
+                <th class="py-2.5 px-3">Citizen</th>
+                <th class="py-2.5 px-3">Violation Type</th>
+                <th class="py-2.5 px-3">Location</th>
+                <th class="py-2.5 px-3">Amount</th>
+                <th class="py-2.5 px-3">Status</th>
+                <th class="py-2.5 px-3 text-right">Evidence</th>
+              </tr>
+            </thead>
+            <tbody id="adminAllPenaltiesBody" class="divide-y divide-slate-800/60">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-900 bg-slate-950/80 py-8 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <i data-lucide="leaf" class="w-4 h-4 text-emerald-400"></i>
+        <span>Eco Loop Smart Waste Management & AI Surveillance Platform</span>
+      </div>
+      <p class="text-[11px]">Empowering clean cities with AI optical surveillance, dynamic QR passes, and citizen reward incentives.</p>
+    </div>
+  </footer>
+
+  <!-- App Scripts -->
+  <script src="/static/js/cctv_map.js"></script>
+  <script src="/static/js/scanner.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

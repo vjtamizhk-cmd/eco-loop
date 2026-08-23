@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vintage School Pen Fight 3D</title>
+  <link rel="stylesheet" href="./src/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Kalam:wght@400;700&family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- ============================================================= -->
+  <!-- LOGIN / AUTH SCREEN (Shown before main menu if not signed in) -->
+  <!-- ============================================================= -->
+  <div id="login-screen" class="modal-screen">
+    <div class="login-card">
+      <div class="login-logo">🏫</div>
+      <h1 class="login-title">VINTAGE PEN FIGHT 3D</h1>
+      <p class="login-subtitle">Classic Classroom Desk Championship</p>
+      <div class="login-divider"></div>
+      <p class="login-prompt">Sign in to save your progress, unlock pens, and compete on leaderboards!</p>
+      <button id="btn-google-signin" class="google-signin-btn">
+        <svg class="google-icon" viewBox="0 0 24 24" width="22" height="22">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        <span>Sign in with Google</span>
+      </button>
+      <button id="btn-play-guest" class="guest-btn">
+        <span>👤 Play as Guest</span>
+      </button>
+      <p class="login-footer">Period 5 Physics • No homework required 📚</p>
+    </div>
+  </div>
+
+  <!-- 3D Three.js Classroom Viewport -->
+  <div id="canvas-container"></div>
+
+  <!-- Top Left Preset Camera Bar -->
+  <div id="camera-bar">
+    <button id="btn-cam-bench" class="cam-btn active">[1] 🎥 Bench View</button>
+    <button id="btn-cam-top" class="cam-btn">[2] 📐 Top-Down</button>
+    <button id="btn-cam-pen" class="cam-btn">[3] 🔍 Pen Cam</button>
+  </div>
+
+  <!-- Top Right Actions -->
+  <div id="top-right-bar">
+    <!-- User Profile Badge (shown when signed in) -->
+    <div id="user-profile-badge" class="user-badge hidden">
+      <img id="user-avatar" class="user-avatar" src="" alt="avatar" />
+      <span id="user-display-name" class="user-name"></span>
+      <button id="btn-signout" class="hud-icon-btn signout-btn" title="Sign Out">
+        <span>🚪</span>
+      </button>
+    </div>
+    <button id="btn-toggle-sound" class="hud-icon-btn" title="Toggle Sound">
+      <span id="sound-icon">🔊</span>
+    </button>
+    <button id="btn-pause-menu" class="hud-icon-btn" title="Pause / Menu">
+      <span>⏸️</span>
+    </button>
+  </div>
+
+  <!-- Top Slate Scoreboard -->
+  <div id="top-hud">
+    <div class="slate-scoreboard" id="scoreboard-container">
+      <div class="player-card p1" id="p1-card">
+        <span class="name" id="p1-name">Player 1</span>
+        <span class="stars" id="p1-score">☆☆☆</span>
+      </div>
+      <div class="vs-badge" id="vs-badge-1">VS</div>
+      <div class="player-card p2" id="p2-card">
+        <span class="name" id="p2-name">Opponent</span>
+        <span class="stars" id="p2-score">☆☆☆</span>
+      </div>
+      <div class="vs-badge hidden" id="vs-badge-2">VS</div>
+      <div class="player-card p3 hidden" id="p3-card">
+        <span class="name" id="p3-name">Player 3</span>
+        <span class="stars" id="p3-score">☆☆☆</span>
+      </div>
+      <div class="vs-badge hidden" id="vs-badge-3">VS</div>
+      <div class="player-card p4 hidden" id="p4-card">
+        <span class="name" id="p4-name">Player 4</span>
+        <span class="stars" id="p4-score">☆☆☆</span>
+      </div>
+    </div>
+    <div id="turn-banner" class="turn-p1">
+      <span id="turn-text">Player 1's Turn (Press SPACE to Flick!)</span>
+    </div>
+    <div id="status-msg"></div>
+  </div>
+
+  <!-- PRACTICE MODE TOOLBAR (Visible during Practice Mode) -->
+  <div id="practice-bar" class="hidden">
+    <div class="practice-title">🎓 PRACTICE:</div>
+    <button id="btn-practice-single" class="practice-btn active">Single Dummy</button>
+    <button id="btn-practice-multi" class="practice-btn">3 Dummies</button>
+    <button id="btn-practice-bot" class="practice-btn">Practice Bot</button>
+    <button id="btn-practice-reset" class="practice-btn reset-btn">🔄 Reset (R)</button>
+    <button id="btn-practice-exit" class="practice-btn exit-btn">🏠 Menu</button>
+  </div>
+
+  <!-- BOTTOM MINIMAL HUD: CALM POWER BAR & SIMPLE TOGGLE -->
+  <div id="bottom-hud">
+    <!-- Simple Shot Style Toggle (Spin vs Drive) -->
+    <div class="mode-tabs">
+      <button class="mode-tab-btn active" data-type="spin" data-offset="-0.80" title="Hit tail for high-speed helicopter spin">
+        <span class="key-hint">[Q]</span> 🌪️ SPIN WHIP
+      </button>
+      <button class="mode-tab-btn" data-type="drive" data-offset="0.0" title="Hit center for straight linear push">
+        <span class="key-hint">[W]</span> 🚀 STRAIGHT DRIVE
+      </button>
+    </div>
+
+    <!-- Calm Oscillating Power Bar (Timing Needle) -->
+    <div id="oscillating-power-bar" title="Press SPACEBAR or ENTER (or click here) at the desired power!">
+      <div class="power-track">
+        <div class="zone zone-green" title="Green Zone: Soft Bunt"></div>
+        <div class="zone zone-yellow" title="Yellow Zone: Normal Power"></div>
+        <div class="zone zone-red" title="Red Zone: Super SMASH!"></div>
+
+        <div id="osc-power-fill"></div>
+        <div id="osc-power-marker"></div>
+      </div>
+
+      <!-- Power Bar Info Display -->
+      <div class="power-bar-info">
+        <div class="aim-hint">Aim: <strong>[A / D]</strong> or <strong>[◀ / ▶]</strong></div>
+        <div class="action-prompt">
+          <span class="key-pill">SPACE</span> or <span class="key-pill">ENTER</span> TO FLICK
+        </div>
+        <div class="power-readout">
+          <span id="osc-power-zone">⚡ POWER</span>
+          <span id="osc-power-val" class="power-num">65%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- -------------------------------------------------------------
+       MODAL 1: MAIN MENU (VINTAGE BLACKBOARD)
+       ------------------------------------------------------------- -->
+  <div id="main-menu" class="modal-screen hidden">
+    <div class="modal-card">
+      <h2>🏫 VINTAGE PEN FIGHT 3D 🏫</h2>
+      <p class="subtitle">Classic Classroom Desk Championship • Period 5 Physics</p>
+
+      <div class="menu-grid">
+        <button id="menu-btn-ai" class="menu-btn primary">
+          <span class="icon">🎮</span>
+          <span>QUICK MATCH (vs AI)</span>
+          <span style="font-size: 11px; font-weight: normal; color: #c8e6c9;">Challenge the Class Topper on the bench</span>
+        </button>
+        <button id="menu-btn-multiplayer" class="menu-btn highlight-btn" style="border-color: #f59e0b; background: linear-gradient(135deg, #b45309, #78350f);">
+          <span class="icon">👥</span>
+          <span>MULTIPLAYER</span>
+          <span style="font-size: 11px; font-weight: normal; color: #fde68a;">2-Player • 3-Player • 4-Player</span>
+        </button>
+        <button id="menu-btn-practice" class="menu-btn highlight-btn">
+          <span class="icon">🎓</span>
+          <span>PRACTICE SANDBOX</span>
+          <span style="font-size: 11px; font-weight: normal; color: #ffea78;">Free practice with dummy pens or bot</span>
+        </button>
+        <button id="menu-btn-challenges" class="menu-btn">
+          <span class="icon">🎯</span>
+          <span>TRICK SHOTS</span>
+          <span style="font-size: 11px; font-weight: normal; color: #aaa;">Ruler banks & eraser deflections</span>
+        </button>
+        <button id="menu-btn-locker" class="menu-btn">
+          <span class="icon">🖋️</span>
+          <span>PEN LOCKER</span>
+          <span style="font-size: 11px; font-weight: normal; color: #aaa;">Reynolds, Cello, Parker, Pilot, Hero</span>
+        </button>
+        <button id="menu-btn-rules" class="menu-btn">
+          <span class="icon">📖</span>
+          <span>CONTROLS & RULES</span>
+          <span style="font-size: 11px; font-weight: normal; color: #aaa;">Keyboard shortcuts & guide</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- -------------------------------------------------------------
+       MODAL 2: MULTIPLAYER MODE SELECTION & PROFILES
+       ------------------------------------------------------------- -->
+  <div id="multiplayer-modal" class="modal-screen hidden">
+    <div class="modal-card" style="max-width: 780px;">
+      <button class="close-modal">&times;</button>
+      <h2 id="mp-modal-title">👥 MULTIPLAYER</h2>
+      <p id="mp-modal-subtitle" class="subtitle">Select your player mode to continue</p>
+
+      <!-- Step 1: Choose Player Count (2, 3, or 4 Players) -->
+      <div id="mp-step-choose-count" class="stages-grid">
+        <div class="stage-card" id="btn-select-2p">
+          <div>
+            <h3>🎮 2-Player (Head-to-Head Duel)</h3>
+            <p>1v1 classroom duel on opposite sides of the desk.</p>
+          </div>
+          <span style="font-size: 24px;">▶</span>
+        </div>
+
+        <div class="stage-card" id="btn-select-3p">
+          <div>
+            <h3>🎮 3-Player (Triangular Showdown)</h3>
+            <p>3-way free-for-all in a triangular desk formation.</p>
+          </div>
+          <span style="font-size: 24px;">▶</span>
+        </div>
+
+        <div class="stage-card" id="btn-select-4p">
+          <div>
+            <h3>🎮 4-Player (4-Corner Royal Rumble)</h3>
+            <p>Ultimate 4-player chaotic classroom desk battle royale!</p>
+          </div>
+          <span style="font-size: 24px;">▶</span>
+        </div>
+      </div>
+
+      <!-- Step 2: Configure Player Names & Pens (Initially Hidden) -->
+      <div id="mp-step-setup-players" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <button id="btn-mp-back-to-count" class="step-btn">⬅ Change Player Count</button>
+          <span id="mp-current-mode-label" style="font-weight: 800; color: var(--gold-accent); font-size: 13px;">2 Players Selected</span>
+        </div>
+
+        <!-- Player Cards Grid -->
+        <div class="mp-players-grid" id="mp-players-grid">
+          <!-- Player 1 Card -->
+          <div class="mp-player-card p1-theme" id="mp-card-p1">
+            <div class="mp-card-header">
+              <span class="mp-badge p1-badge">P1</span>
+              <input type="text" id="mp-name-p1" class="mp-name-input" value="Player 1" maxlength="14" />
+            </div>
+            <div class="mp-card-row">
+              <label>Pen:</label>
+              <select id="mp-pen-p1" class="mp-select">
+                <option value="reynolds045" selected>Reynolds 045 (White)</option>
+                <option value="cello_gripper">Cello Gripper</option>
+                <option value="pilot_v5">Pilot V5 Hi-Tecpoint</option>
+                <option value="parker_vector">Parker Vector Metallic</option>
+                <option value="hero_fountain">Hero 329 Fountain Pen</option>
+                <option value="natraj_pencil">Natraj 621 HB Pencil</option>
+              </select>
+            </div>
+            <div class="mp-card-row">
+              <label>Color:</label>
+              <div class="mp-swatches" id="mp-colors-p1">
+                <button class="mp-swatch active" data-color="#0044cc" style="background:#0044cc;"></button>
+                <button class="mp-swatch" data-color="#0284c7" style="background:#0284c7;"></button>
+                <button class="mp-swatch" data-color="#1e293b" style="background:#1e293b;"></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Player 2 Card -->
+          <div class="mp-player-card p2-theme" id="mp-card-p2">
+            <div class="mp-card-header">
+              <span class="mp-badge p2-badge">P2</span>
+              <input type="text" id="mp-name-p2" class="mp-name-input" value="Player 2" maxlength="14" />
+            </div>
+            <div class="mp-card-row">
+              <label>Pen:</label>
+              <select id="mp-pen-p2" class="mp-select">
+                <option value="reynolds045">Reynolds 045</option>
+                <option value="cello_gripper" selected>Cello Gripper</option>
+                <option value="pilot_v5">Pilot V5 Hi-Tecpoint</option>
+                <option value="parker_vector">Parker Vector Metallic</option>
+                <option value="hero_fountain">Hero 329 Fountain Pen</option>
+                <option value="natraj_pencil">Natraj 621 HB Pencil</option>
+              </select>
+            </div>
+            <div class="mp-card-row">
+              <label>Color:</label>
+              <div class="mp-swatches" id="mp-colors-p2">
+                <button class="mp-swatch active" data-color="#dc2626" style="background:#dc2626;"></button>
+                <button class="mp-swatch" data-color="#991b1b" style="background:#991b1b;"></button>
+                <button class="mp-swatch" data-color="#ea580c" style="background:#ea580c;"></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Player 3 Card -->
+          <div class="mp-player-card p3-theme hidden" id="mp-card-p3">
+            <div class="mp-card-header">
+              <span class="mp-badge p3-badge">P3</span>
+              <input type="text" id="mp-name-p3" class="mp-name-input" value="Player 3" maxlength="14" />
+            </div>
+            <div class="mp-card-row">
+              <label>Pen:</label>
+              <select id="mp-pen-p3" class="mp-select">
+                <option value="reynolds045">Reynolds 045</option>
+                <option value="cello_gripper">Cello Gripper</option>
+                <option value="pilot_v5" selected>Pilot V5 Hi-Tecpoint</option>
+                <option value="parker_vector">Parker Vector Metallic</option>
+                <option value="hero_fountain">Hero 329 Fountain Pen</option>
+                <option value="natraj_pencil">Natraj 621 HB Pencil</option>
+              </select>
+            </div>
+            <div class="mp-card-row">
+              <label>Color:</label>
+              <div class="mp-swatches" id="mp-colors-p3">
+                <button class="mp-swatch active" data-color="#16a34a" style="background:#16a34a;"></button>
+                <button class="mp-swatch" data-color="#0d9488" style="background:#0d9488;"></button>
+                <button class="mp-swatch" data-color="#047857" style="background:#047857;"></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Player 4 Card -->
+          <div class="mp-player-card p4-theme hidden" id="mp-card-p4">
+            <div class="mp-card-header">
+              <span class="mp-badge p4-badge">P4</span>
+              <input type="text" id="mp-name-p4" class="mp-name-input" value="Player 4" maxlength="14" />
+            </div>
+            <div class="mp-card-row">
+              <label>Pen:</label>
+              <select id="mp-pen-p4" class="mp-select">
+                <option value="reynolds045">Reynolds 045</option>
+                <option value="cello_gripper">Cello Gripper</option>
+                <option value="pilot_v5">Pilot V5 Hi-Tecpoint</option>
+                <option value="parker_vector" selected>Parker Vector Metallic</option>
+                <option value="hero_fountain">Hero 329 Fountain Pen</option>
+                <option value="natraj_pencil">Natraj 621 HB Pencil</option>
+              </select>
+            </div>
+            <div class="mp-card-row">
+              <label>Color:</label>
+              <div class="mp-swatches" id="mp-colors-p4">
+                <button class="mp-swatch active" data-color="#d97706" style="background:#d97706;"></button>
+                <button class="mp-swatch" data-color="#ca8a04" style="background:#ca8a04;"></button>
+                <button class="mp-swatch" data-color="#9333ea" style="background:#9333ea;"></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Start Battle Button -->
+        <button id="btn-start-mp-match" class="btn-flick-primary" style="width: 100%; justify-content: center; margin-top: 16px; font-size: 16px; padding: 12px;">
+          <span>⚔️ START MATCH</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- -------------------------------------------------------------
+       MODAL 3: PRACTICE MODE SELECTOR
+       ------------------------------------------------------------- -->
+  <div id="practice-modal" class="modal-screen hidden">
+    <div class="modal-card">
+      <button class="close-modal">&times;</button>
+      <h2>🎓 PRACTICE SANDBOX</h2>
+      <p class="subtitle">Master your timing, angle, and knockouts with instant resets!</p>
+
+      <div class="stages-grid">
+        <div class="stage-card" onclick="window.game.startPracticeMode('single', 1)">
+          <div>
+            <h3>🎯 1. Single Dummy Target</h3>
+            <p>Freely practice flick angles, power timing, and edge knockouts.</p>
+          </div>
+          <span style="font-size: 24px;">▶</span>
+        </div>
+
+        <div class="stage-card" onclick="window.game.startPracticeMode('multi', 3)">
+          <div>
+            <h3>🎯 2. Multi-Dummy Cluster (3 Pens)</h3>
+            <p>Practice devastating Spin sweeps and multi-pen collisions!</p>
+          </div>
+          <span style="font-size: 24px;">▶</span>
+        </div>
+
+        <div class="stage-card" onclick="window.game.startPracticeMode('bot', 1)">
+          <div>
+            <h3>🤖 3. Sparring Bot</h3>
+            <p>Continuous back-and-forth sparring match with instant round resets.</p>
+          </div>
+          <span style="font-size: 24px;">▶</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- -------------------------------------------------------------
+       MODAL 4: 3D PEN LOCKER & CUSTOMIZER
+       ------------------------------------------------------------- -->
+  <div id="locker-modal" class="modal-screen hidden">
+    <div class="modal-card" style="max-width: 720px;">
+      <button class="close-modal">&times;</button>
+      <h2>🖋️ PEN LOCKER & CUSTOMIZER</h2>
+      <p class="subtitle">Select your weapon, tune cap weight balance, and customize colors</p>
+
+      <div class="locker-layout">
+        <div class="locker-preview-box">
+          <div id="locker-3d-preview"></div>
+          <button id="btn-locker-prev" class="locker-nav-btn">◀</button>
+          <button id="btn-locker-next" class="locker-nav-btn">▶</button>
+        </div>
+
+        <div class="locker-details-box">
+          <h3 id="locker-pen-name" style="color: var(--chalk-yellow); font-size: 20px;">Reynolds 045</h3>
+          <p id="locker-pen-tag" style="color: #64b5f6; font-size: 13px; font-weight: bold;">The Legendary White Carbure</p>
+          <p id="locker-pen-desc" style="font-size: 12px; color: #bbb; line-height: 1.4;">Classic hexagonal white barrel with spin whip balance.</p>
+          <p id="locker-pen-era" style="font-size: 11px; color: #888;"></p>
+
+          <div class="stats-container">
+            <div class="stat-row">
+              <span>Weight / Mass:</span>
+              <div class="stat-bar-bg"><div class="stat-bar-fill" id="stat-mass"></div></div>
+            </div>
+            <div class="stat-row">
+              <span>Spin Whip:</span>
+              <div class="stat-bar-bg"><div class="stat-bar-fill" id="stat-spin"></div></div>
+            </div>
+            <div class="stat-row">
+              <span>Knockout Force:</span>
+              <div class="stat-bar-bg"><div class="stat-bar-fill" id="stat-knock"></div></div>
+            </div>
+            <div class="stat-row">
+              <span>Slide Speed:</span>
+              <div class="stat-bar-bg"><div class="stat-bar-fill" id="stat-speed"></div></div>
+            </div>
+          </div>
+
+          <div style="font-size: 12px; font-weight: bold; color: #ddd;">Ink / Cap Color:</div>
+          <div class="color-swatches" id="locker-colors"></div>
+
+          <div style="font-size: 12px; font-weight: bold; color: #ddd; margin-top: 4px;">Cap Position:</div>
+          <div class="cap-options">
+            <button class="cap-pos-btn active" data-pos="back">Cap on Rear (Max Spin 🌪️)</button>
+            <button class="cap-pos-btn" data-pos="front">Cap on Front (Heavy Nose 🛡️)</button>
+            <button class="cap-pos-btn" data-pos="none">No Cap (Agile 🪶)</button>
+          </div>
+
+          <button id="btn-equip-pen" class="btn-flick-primary" style="margin-top: 12px; justify-content: center; width: 100%; padding: 10px;">
+            <span>EQUIP THIS PEN</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- -------------------------------------------------------------
+       MODAL 6: TRICK SHOT CHALLENGES
+       ------------------------------------------------------------- -->
+  <div id="challenges-modal" class="modal-screen hidden">
+    <div class="modal-card">
+      <button class="close-modal">&times;</button>
+      <h2>🎯 TRICK SHOT CHALLENGES</h2>
+      <p class="subtitle">Master real classroom prop bank shots and trick shots!</p>
+
+      <div class="stages-grid">
+        <div class="stage-card" onclick="window.game.startChallenge(0)">
+          <div>
+            <h3>Challenge 1: Ruler Bank Shot</h3>
+            <p>Bank off the 30cm wooden ruler to knock the target pen off the desk.</p>
+          </div>
+          <span style="font-size: 24px;">▶</span>
+        </div>
+
+        <div class="stage-card" onclick="window.game.startChallenge(1)">
+          <div>
+            <h3>Challenge 2: Natraj Eraser Deflection</h3>
+            <p>Deflect your shot off the Natraj eraser into the target pen on the left.</p>
+          </div>
+          <span style="font-size: 24px;">▶</span>
+        </div>
+
+        <div class="stage-card" onclick="window.game.startChallenge(2)">
+          <div>
+            <h3>Challenge 3: Behind the Geometry Box</h3>
+            <p>Bank around the Camlin geometry box to knock out the hidden opponent pen.</p>
+          </div>
+          <span style="font-size: 24px;">▶</span>
+        </div>
+
+        <div class="stage-card" onclick="window.game.startChallenge(3)">
+          <div>
+            <h3>Challenge 4: Double Strike Split</h3>
+            <p>Knock TWO opponent pens off the desk simultaneously with a high-power Spin Whip!</p>
+          </div>
+          <span style="font-size: 24px;">▶</span>
+        </div>
+
+        <div class="stage-card" onclick="window.game.startChallenge(4)">
+          <div>
+            <h3>Challenge 5: The Narrow Corridor</h3>
+            <p>Thread through the narrow gap between the Notebook and Ruler to eliminate the Parker pen.</p>
+          </div>
+          <span style="font-size: 24px;">▶</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- -------------------------------------------------------------
+       MODAL 7: MATCH END / WINNER
+       ------------------------------------------------------------- -->
+  <div id="match-end-modal" class="modal-screen hidden">
+    <div class="modal-card">
+      <h2 id="match-end-title">🏆 CLASSROOM CHAMPION!</h2>
+      <p id="match-end-subtitle" class="subtitle">You scored a clean knockout victory!</p>
+      <div style="display: flex; gap: 14px; margin-top: 16px; width: 100%;">
+        <button class="btn-flick-primary" onclick="window.game.restartMatch(); document.getElementById('match-end-modal').classList.add('hidden');" style="flex: 1; justify-content: center;">
+          <span>🔄 PLAY AGAIN</span>
+        </button>
+        <button class="btn-flick-primary" onclick="window.game.ui.showMainMenu();" style="flex: 1; justify-content: center; background: #334155; border-color: #64748b;">
+          <span>🏠 MAIN MENU</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- -------------------------------------------------------------
+       MODAL 8: PAUSE MENU
+       ------------------------------------------------------------- -->
+  <div id="pause-modal" class="modal-screen hidden">
+    <div class="modal-card" style="max-width: 440px;">
+      <h2>⏸️ MATCH PAUSED</h2>
+      <p class="subtitle">Class is on hold</p>
+      <div style="display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 12px;">
+        <button id="btn-resume" class="menu-btn primary">▶ RESUME MATCH</button>
+        <button id="btn-restart-match" class="menu-btn">🔄 RESTART ROUND</button>
+        <button id="btn-quit-menu" class="menu-btn">🏠 QUIT TO MAIN MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- -------------------------------------------------------------
+       MODAL 9: RULES & KEYBOARD SHORTCUTS
+       ------------------------------------------------------------- -->
+  <div id="rules-modal" class="modal-screen hidden">
+    <div class="modal-card" style="max-width: 620px;">
+      <button class="close-modal">&times;</button>
+      <h2>📖 CONTROLS & HOW TO PLAY</h2>
+      <p class="subtitle">The Golden Rules of Period 5 Pen Fight</p>
+
+      <div class="rules-content">
+        <p>🎮 <strong>AIMING</strong>: Move your <strong>Mouse</strong> across the desk or use <strong>[A] / [D]</strong> or <strong>[◀ / ▶] Arrow Keys</strong>.</p>
+        <p>⚡ <strong>POWER FLICK</strong>: Press <strong>[SPACE]</strong> or <strong>[ENTER]</strong> when the oscillating needle reaches your desired power.</p>
+        <p>🌪️ <strong>SHOT TYPES</strong>:
+          <br>• <strong>[Q] Spin Whip</strong>: Hits pen tail for high-speed helicopter spin sweeps.
+          <br>• <strong>[W] Straight Drive</strong>: Hits pen center for straight linear push.
+        </p>
+        <p>🎯 <strong>AUTO-LOCK</strong>: Press <strong>[L]</strong> to align directly with the target pen.</p>
+        <p>🎥 <strong>CAMERAS</strong>: Press <strong>[1]</strong> for Bench View, <strong>[2]</strong> for Top-Down, <strong>[3]</strong> for Pen Cam.</p>
+        <p>🏆 <strong>OBJECTIVE</strong>: Knock opponent pens off the wooden bench while keeping your own pen safely on the desk!</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
