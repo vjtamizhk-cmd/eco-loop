@@ -23,6 +23,103 @@ body {
   font-family: 'JetBrains Mono', monospace;
 }
 
+.mobile-section-nav {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  body {
+    padding-bottom: 76px;
+  }
+
+  header .max-w-7xl {
+    height: 60px;
+  }
+
+  #currentRoleHeaderBadge {
+    display: none;
+  }
+
+  #btnUnifiedAuth {
+    padding: 0.5rem;
+  }
+
+  #btnUnifiedAuth span {
+    display: none;
+  }
+
+  main {
+    padding-top: 1rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+
+  .mobile-section-block,
+  .mobile-section-block > *,
+  .mobile-section-block .glass-card {
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .mobile-section-block .glass-card {
+    border-color: rgba(71, 85, 105, 0.72);
+    box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.04);
+  }
+
+  .mobile-section-block {
+    display: none !important;
+  }
+
+  .mobile-section-block.is-mobile-active {
+    display: block !important;
+    animation: mobile-section-enter 180ms ease-out;
+  }
+
+  .mobile-section-nav {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 50;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.35rem;
+    padding: 0.5rem max(0.65rem, env(safe-area-inset-left)) calc(0.5rem + env(safe-area-inset-bottom)) max(0.65rem, env(safe-area-inset-right));
+    background: rgba(15, 23, 42, 0.96);
+    border-top: 1px solid rgba(51, 65, 85, 0.9);
+    box-shadow: 0 -10px 30px rgba(2, 6, 23, 0.35);
+    backdrop-filter: blur(14px);
+  }
+
+  .mobile-section-tab {
+    min-height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    border: 1px solid transparent;
+    border-radius: 0.75rem;
+    color: #94a3b8;
+    font-size: 0.68rem;
+    font-weight: 700;
+    transition: color 160ms ease, background 160ms ease, border-color 160ms ease;
+  }
+
+  .mobile-section-tab.is-active {
+    color: #6ee7b7;
+    background: rgba(6, 78, 59, 0.55);
+    border-color: rgba(16, 185, 129, 0.35);
+  }
+
+  .overflow-x-auto {
+    scrollbar-width: thin;
+  }
+}
+
+@keyframes mobile-section-enter {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* Glassmorphism Cards */
 .glass-card {
   background: rgba(30, 41, 59, 0.7);

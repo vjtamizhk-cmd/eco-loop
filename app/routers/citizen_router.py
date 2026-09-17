@@ -79,15 +79,6 @@ def get_citizen_dashboard(user_id: int, db: Session = Depends(get_db)):
 
     qr_image = generate_qr_base64(user)
 
-    # Eco Tier Calculation
-    tier = "Bronze Eco-Citizen"
-    if user.eco_credits >= 1000:
-        tier = "Diamond Eco-Guardian 💎"
-    elif user.eco_credits >= 500:
-        tier = "Gold Eco-Warrior 🥇"
-    elif user.eco_credits >= 200:
-        tier = "Silver Eco-Advocate 🥈"
-
     return {
         "user": {
             "id": user.id,
@@ -100,8 +91,7 @@ def get_citizen_dashboard(user_id: int, db: Session = Depends(get_db)):
             "ward": user.ward,
             "role": user.role,
             "qr_token": user.qr_token,
-            "eco_credits": user.eco_credits,
-            "tier": tier
+            "eco_credits": user.eco_credits
         },
         "qr_image": qr_image,
         "metrics": {

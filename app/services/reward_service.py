@@ -1,24 +1,68 @@
 import uuid
 import datetime
 from sqlalchemy.orm import Session
-from app.models import User, WasteCollection, Reward, RewardRedemption, WasteRateConfig
+from app.models import User, WasteCollection, Reward, RewardRedemption, WasteRateConfig, Penalty, MonthlyFinePool, CreditLedger
 
 DEFAULT_WASTE_RATES = {
-    "Organic / Wet Waste": 5.0,
-    "Recyclable Plastic": 15.0,
-    "Paper & Cardboard": 8.0,
-    "Metal & Aluminum": 25.0,
-    "E-Waste": 50.0,
-    "Glass & Bottles": 10.0,
-    "Hazardous Waste": 20.0
+    "mixed_unsegregated": 0.2,
+    "wet_organic_segregated": 1.0,
+    "dry_non_recyclable_segregated": 0.6,
+    "dry_recyclable_segregated": 2.0,
+    "metal_ewaste": 0.0
 }
+
+REWARD_POOL_PCT = 0.65
+ENFORCEMENT_PCT = 0.25
+RESERVE_PCT = 0.10
+CREDIT_VALUE_FLOOR_INR = 0.15
+CREDIT_VALUE_CEILING_INR = 0.40
+BLENDED_CREDITS_PER_KG = 1.0
+MONTHLY_KG_CAP = 50.0
+TIER_1_KG_LIMIT = 20.0
+TIER_2_KG_LIMIT = 30.0
 
 def get_waste_rate(db: Session, waste_type: str) -> float:
     """Get current credit rate per kg for a given waste type."""
     config = db.query(WasteRateConfig).filter(WasteRateConfig.waste_type == waste_type).first()
-    if config:
+    if config and config.waste_type in DEFAULT_WASTE_RATES:
         return config.credits_per_kg
-    return DEFAULT_WASTE_RATES.get(waste_type, 10.0)
+    return DEFAULT_WASTE_RATES.get(waste_type, 0.0)
+
+
+def get_current_credit_value(db: Session, now=None) -> float:
+    now = now or datetime.datetime.utcnow()
+    month_year = now.strftime("%Y-%m")
+    pool = db.query(MonthlyFinePool).filter(MonthlyFinePool.month_year == month_year).first()
+    if pool:
+        return pool.final_credit_value_inr
+
+    fines_collected = db.query(Penalty).filter(
+        Penalty.status == "PAID",
+        Penalty.paid_at >= now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    ).with_entities(Penalty.fine_amount).all()
+    fines_total = sum(row[0] or 0.0 for row in fines_collected)
+    households = db.query(WasteCollection.user_id).filter(
+        WasteCollection.collected_at >= now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    ).distinct().count()
+    waste_kg = db.query(WasteCollection.weight_kg).filter(
+        WasteCollection.collected_at >= now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    ).all()
+    average_kg = (sum(row[0] or 0.0 for row in waste_kg) / households) if households else 0.0
+    total_credits = households * average_kg * BLENDED_CREDITS_PER_KG
+    reward_pool = fines_total * REWARD_POOL_PCT
+    raw_value = reward_pool / total_credits if total_credits else 0.0
+    final_value = max(CREDIT_VALUE_FLOOR_INR, min(CREDIT_VALUE_CEILING_INR, raw_value))
+    pool = MonthlyFinePool(
+        month_year=month_year,
+        fines_collected_inr=fines_total,
+        reward_pool_inr=reward_pool,
+        total_credits_issued=total_credits,
+        raw_credit_value_inr=raw_value,
+        final_credit_value_inr=final_value
+    )
+    db.add(pool)
+    db.commit()
+    return final_value
 
 def record_waste_collection(
     db: Session,
@@ -48,7 +92,16 @@ def record_waste_collection(
         raise ValueError("Collector profile not found")
 
     rate_per_kg = get_waste_rate(db, waste_type)
-    credits_awarded = round(weight_kg * rate_per_kg, 2)
+    month_start = datetime.datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    month_kg = db.query(WasteCollection.weight_kg).filter(
+        WasteCollection.user_id == citizen.id,
+        WasteCollection.collected_at >= month_start
+    ).all()
+    cumulative_kg = sum(row[0] or 0.0 for row in month_kg)
+    eligible_kg = max(0.0, min(weight_kg, MONTHLY_KG_CAP - cumulative_kg))
+    full_rate_kg = max(0.0, min(eligible_kg, TIER_1_KG_LIMIT - cumulative_kg))
+    reduced_rate_kg = max(0.0, eligible_kg - full_rate_kg)
+    credits_awarded = round((full_rate_kg * rate_per_kg) + (reduced_rate_kg * rate_per_kg * 0.5), 2)
 
     now = datetime.datetime.utcnow()
     collection_code = f"COL-{now.year}-{uuid.uuid4().hex[:6].upper()}"
@@ -83,6 +136,12 @@ def record_waste_collection(
             req.collector_id = collector.id
 
     db.add(collection)
+    db.add(CreditLedger(
+        user_id=citizen.id,
+        transaction_type="earn",
+        credits=credits_awarded,
+        inr_value_at_transaction=round(credits_awarded * get_current_credit_value(db, now), 2)
+    ))
     db.commit()
     db.refresh(collection)
     db.refresh(citizen)
@@ -121,10 +180,16 @@ def redeem_reward(
         status="ACTIVE"
     )
 
-    # Deduct credits
+    # Deduct credits using the current monthly exchange value.
     user.eco_credits = round(user.eco_credits - reward.credit_cost, 2)
 
     db.add(redemption)
+    db.add(CreditLedger(
+        user_id=user.id,
+        transaction_type="redeem",
+        credits=-reward.credit_cost,
+        inr_value_at_transaction=round(reward.credit_cost * get_current_credit_value(db, now), 2)
+    ))
     db.commit()
     db.refresh(redemption)
     db.refresh(user)

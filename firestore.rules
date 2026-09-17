@@ -1,0 +1,11 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Allow public read and write access for seamless demo, offline sync, and real-time municipal AI operations
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

@@ -49,7 +49,7 @@ def verify_scanned_qr(payload: dict, db: Session = Depends(get_db)):
 @router.get("/rates")
 def get_waste_categories_and_rates(db: Session = Depends(get_db)):
     """Get active waste categories and credits awarded per kg."""
-    configs = db.query(WasteRateConfig).all()
+    configs = db.query(WasteRateConfig).filter(WasteRateConfig.waste_type.in_(DEFAULT_WASTE_RATES.keys())).all()
     if configs:
         return [
             {

@@ -160,6 +160,33 @@ class WasteRateConfig(Base):
     description = Column(String(255), default="")
 
 
+class MonthlyFinePool(Base):
+    __tablename__ = "monthly_fine_pools"
+
+    id = Column(Integer, primary_key=True, index=True)
+    month_year = Column(String(7), unique=True, index=True, nullable=False)
+    fines_collected_inr = Column(Float, nullable=False, default=0.0)
+    reward_pool_pct = Column(Float, nullable=False, default=0.65)
+    enforcement_pct = Column(Float, nullable=False, default=0.25)
+    reserve_pct = Column(Float, nullable=False, default=0.10)
+    reward_pool_inr = Column(Float, nullable=False, default=0.0)
+    total_credits_issued = Column(Float, nullable=False, default=0.0)
+    raw_credit_value_inr = Column(Float, nullable=False, default=0.0)
+    final_credit_value_inr = Column(Float, nullable=False, default=0.15)
+    calculated_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class CreditLedger(Base):
+    __tablename__ = "credit_ledger"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    transaction_type = Column(String(20), nullable=False)
+    credits = Column(Float, nullable=False)
+    inr_value_at_transaction = Column(Float, nullable=False, default=0.0)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
 class WastePickupRequest(Base):
     __tablename__ = "waste_pickup_requests"
 

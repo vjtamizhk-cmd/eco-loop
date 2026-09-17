@@ -1,67 +1,89 @@
-# Walkthrough - Eco Loop (Strict RBAC & On-Demand Waste Pickup)
+# Walkthrough - Eco Loop: Firebase Backend Migration (Auth + Firestore + Hosting)
 
-**Eco Loop** has been updated with **Strict Role-Based Access Control (RBAC)** and a real-time **Citizen On-Demand Waste Pickup Calling System**.
-
----
-
-## 🔒 Strict Role-Based Access Control (RBAC)
-
-1. **Citizen Accounts (e.g. Johnathan Doe, Priya Patel, Google Logins)**:
-   - Access is strictly locked to the **Citizen Portal ONLY**.
-   - Collector and Administrator interfaces are completely hidden and inaccessible.
-   - Citizens can view their Eco-Pass QR, pay penalties, redeem EcoCredits, and call doorstep collectors.
-2. **Collector Accounts (e.g. Alex Turner)**:
-   - Access is strictly locked to the **Collector Field Scanner ONLY**.
-   - Receives incoming citizen doorstep pickup calls in real-time, scans citizen QR codes, weighs segregated waste, and transfers EcoCredits.
-3. **Administrator Accounts (e.g. Sarah Jenkins, Director Kumar)**:
-   - Access is strictly locked to the **Administrator Command Center ONLY**.
-   - Monitors CCTV health on interactive maps, triggers AI detection simulations, and tracks penalty defaulters.
+**Eco Loop** has been successfully migrated to a serverless, cloud-native architecture powered by **Firebase Authentication**, **Cloud Firestore**, and **Firebase Hosting**.
 
 ---
 
-## 📞 "Call for Waste Collector" (On-Demand Doorstep Pickup)
+## 🚀 What Was Accomplished
 
-1. **Citizen Flow**:
-   - In the Citizen Portal, click **"📞 Call Waste Collector Now"**.
-   - Choose waste category (*Recyclable Plastic*, *Organic Wet Waste*, *Paper*, *E-Waste*, *Metal*, *Glass*), estimated weight (e.g. `5.0 kg`), urgency (*Immediate within 30 mins*, *Today Afternoon*, *Scheduled*), and doorstep instructions.
-   - Click **Confirm & Dispatch Collector**.
-   - An **Active Pickup Live Status Tracker** appears on the citizen's dashboard showing real-time dispatch status (`DISPATCHED 🟡` ➔ `COLLECTOR EN ROUTE 🟢` ➔ `COMPLETED 🔵`) with the assigned collector's name and a cancel button.
+```mermaid
+graph LR
+    subgraph Client ["Browser Client (SPA)"]
+        UI[Tailwind UI + Leaflet Map]
+        Auth[Firebase Auth SDK]
+        FS[Firestore Client SDK]
+    end
+    subgraph FirebaseServices ["Firebase Cloud Infrastructure"]
+        FBAuth[Firebase Authentication<br/>Google / Email / Phone SMS]
+        FStore[(Cloud Firestore Database<br/>Real-Time NoSQL)]
+        Rules[Firestore Security Rules]
+        Host[Firebase Hosting<br/>eco-loops.web.app]
+    end
 
-2. **Collector Flow**:
-   - The field collector logged into that ward receives the call in their **"Citizen On-Demand Pickup Calls"** live queue.
-   - Collector sees the resident's name, exact address, contact phone, waste type, and urgency.
-   - Clicking **"Accept & Weigh"**:
-     - Automatically updates request status to `EN ROUTE`.
-     - Pre-selects the citizen in the weighing scale form with the category and estimated weight pre-filled.
-     - Collector confirms the measured scale weight, clicks **Confirm Handover**, and credits the citizen's wallet immediately!
-
----
-
-## 🧪 Automated Test Verification
-
-All 12 automated test suites in [`tests/test_api.py`](file:///c:/Users/Peran/OneDrive/Desktop/Eco%20Loop/tests/test_api.py) passed with **100% success rate**:
-
-```text
-tests/test_api.py::test_health_check PASSED                              [  8%]
-tests/test_api.py::test_list_users PASSED                                [ 16%]
-tests/test_api.py::test_google_login_new_user PASSED                     [ 25%]
-tests/test_api.py::test_get_citizen_qr_code PASSED                       [ 33%]
-tests/test_api.py::test_citizen_dashboard PASSED                         [ 41%]
-tests/test_api.py::test_waste_collection_and_credit_award PASSED         [ 50%]
-tests/test_api.py::test_reward_redemption PASSED                         [ 58%]
-tests/test_api.py::test_pay_penalty PASSED                               [ 66%]
-tests/test_api.py::test_cctv_maintenance_and_reporting PASSED            [ 75%]
-tests/test_api.py::test_ai_detection_simulation PASSED                   [ 83%]
-tests/test_api.py::test_admin_defaulters_and_warning PASSED              [ 91%]
-tests/test_api.py::test_citizen_call_waste_collector_and_accept PASSED   [100%]
-
-======================= 12 passed in 1.69s =======================
+    UI --> Auth
+    UI --> FS
+    Auth --> FBAuth
+    FS --> Rules --> FStore
 ```
 
 ---
 
-## 🌐 Localhost Server is Live
+## 🔑 1. Multi-Method Firebase Authentication
 
-The server is active and running in the background:
+The previous mock login has been replaced with a unified Firebase Authentication system supporting **three distinct sign-in methods**:
 
-👉 **[http://localhost:8000](http://localhost:8000)**
+1. **🔵 Google Sign-In (1-Click Popup)**:
+   - Uses `firebase.auth.GoogleAuthProvider()` with `signInWithPopup()`.
+   - On first sign-in, automatically generates an official municipal citizen profile in Firestore with a unique `ECO-CTZ-xxxx` ID, 50 starter EcoCredits, and custom QR code token.
+2. **✉️ Email & Password Authentication**:
+   - Supports both **Account Creation (Sign Up)** and **Sign In** with password encryption.
+3. **📱 Phone (SMS OTP) Authentication**:
+   - Includes invisible **reCAPTCHA** integration (`firebase.auth.RecaptchaVerifier`) and 6-digit OTP verification.
+4. **🎭 Demo Persona Switcher**:
+   - Allows instant 1-click evaluation of all 3 roles (**Citizen**, **Collector**, **Admin**).
+
+---
+
+## 🗄️ 2. Cloud Firestore Real-Time Data Architecture
+
+All SQLite tables and FastAPI REST endpoints have been replaced with client-side Firestore collections managed by [`firestore-service.js`](file:///c:/Users/Peran/OneDrive/Desktop/Eco%20Loop/app/static/js/firestore-service.js):
+
+| Firestore Collection | Document ID | Description |
+|---|---|---|
+| `users` | `users/{uid}` | Citizen, Collector, and Admin profiles, EcoCredits, QR tokens, and addresses. |
+| `cameras` | `cameras/{code}` | 8 Municipal CCTV cameras with GPS coordinates, live statuses, and AI detection feeds. |
+| `penalties` | `penalties/{code}` | CCTV littering violations, optical evidence images, fine amounts, disputes, and payment states. |
+| `collections` | `collections/{code}` | Waste scale weighings, categories, and EcoCredits credited to residents. |
+| `pickup_requests` | `pickup_requests/{code}` | Real-time on-demand doorstep waste pickup calls with live status progression. |
+| `rewards` | `rewards/{code}` | Municipal benefit catalog items (Tax rebates, Metro transit passes, Compost kits). |
+| `redemptions` | `redemptions/{id}` | Redeemed voucher codes and active discount vouchers. |
+| `tickets` | `tickets/{code}` | CCTV maintenance tickets and technician resolution logs. |
+| `config/rates` | `config/rates` | Municipal waste reward rates (per kg) and statutory littering fine tariffs. |
+
+---
+
+## 📞 3. Real-Time On-Demand Pickup Calling System
+
+- **Citizen View**: Residents click **"📞 Call Waste Collector Now"** to request doorstep waste weighing. A live status tracker updates via `onSnapshot`:
+  `DISPATCHED 🟡` ➔ `COLLECTOR EN ROUTE 🚛` ➔ `AT DOORSTEP 📍` ➔ `COMPLETED & CREDITED ✅`
+- **Collector View**: Collectors receive calls in real-time in the **Ward Dispatch Queue**, click **"Accept"**, mark **"Arrived"**, and click **"Weigh Waste"**.
+- **Instant Handover & Auto-Clear**: Confirming the scale weight automatically credits the resident's EcoCredits wallet, marks the pickup request `COMPLETED`, and clears it from the collector's screen.
+
+---
+
+## 🛡️ 4. Firestore Security Rules
+
+Deployed [`firestore.rules`](file:///c:/Users/Peran/OneDrive/Desktop/Eco%20Loop/firestore.rules) enforcing strict data privacy:
+- Users can read/write their own profile; admins have full governance.
+- CCTV camera status and maintenance tickets are secured.
+- Collections and penalties have audit integrity.
+
+---
+
+## 🌐 5. Deployment & Live URLs
+
+The application is deployed and live on **Firebase Hosting**:
+
+- **Production URL**: **[https://eco-loops.web.app](https://eco-loops.web.app)**
+- **Firebase Console**: **[https://console.firebase.google.com/project/eco-loops/overview](https://console.firebase.google.com/project/eco-loops/overview)**
+- **Local Dev Server**: **[http://localhost:8000](http://localhost:8000)**

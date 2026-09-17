@@ -14,9 +14,24 @@ from app.schemas import (
 )
 from app.services.penalty_service import calculate_penalty_totals, generate_defaulter_notice
 from app.services.cctv_service import report_camera_issue, resolve_maintenance_ticket
+from app.services.reward_service import get_current_credit_value
 from app.routers.citizen_router import format_penalty_out
 
 router = APIRouter(prefix="/api/admin", tags=["Administrator Command Center"])
+credit_router = APIRouter(prefix="/api", tags=["Credit System"])
+
+
+@credit_router.get("/credit-value/current")
+def get_current_credit_exchange_value(db: Session = Depends(get_db)):
+    """Return the current monthly credit-to-INR exchange value."""
+    return {
+        "final_credit_value_inr": get_current_credit_value(db),
+        "credit_value_floor_inr": 0.15,
+        "credit_value_ceiling_inr": 0.40,
+        "reward_pool_pct": 0.65,
+        "enforcement_pct": 0.25,
+        "reserve_pct": 0.10
+    }
 
 @router.get("/overview")
 def get_admin_overview(ward: Optional[str] = None, db: Session = Depends(get_db)):

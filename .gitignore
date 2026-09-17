@@ -9,3 +9,6 @@ __pycache__/
 app/static/images/evidence/
 vintage/dist/
 vintage/.firebase/
+.firebase/
+public/
+.claude/

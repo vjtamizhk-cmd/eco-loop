@@ -24,74 +24,50 @@ def seed_database(db: Session):
     users_data = [
         {
             "citizen_id": "ECO-CTZ-1001",
-            "email": "john.citizen@gmail.com",
-            "full_name": "Johnathan Doe",
+            "email": "guest.citizen@ecoloop.demo",
+            "full_name": "Guest Resident (Preview)",
             "avatar_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
             "phone": "+1 (555) 234-5678",
             "address": "124 Green Valley Road, Apt 4B",
             "ward": "Ward 4 - Green Meadows",
             "role": "citizen",
-            "qr_token": "TOKEN-JOHN-1001-XYZ",
-            "eco_credits": 340.0
+            "qr_token": "ECO-CTZ-1001",
+            "eco_credits": 25.0
         },
         {
-            "citizen_id": "ECO-CTZ-1002",
-            "email": "priya.patel@gmail.com",
-            "full_name": "Priya Patel",
-            "avatar_url": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
-            "phone": "+1 (555) 876-5432",
-            "address": "88 Lotus Boulevard, Ward 4",
-            "ward": "Ward 4 - Green Meadows",
-            "role": "citizen",
-            "qr_token": "TOKEN-PRIYA-1002-ABC",
-            "eco_credits": 620.0
-        },
-        {
-            "citizen_id": "ECO-CTZ-1003",
-            "email": "marcus.vance@gmail.com",
-            "full_name": "Marcus Vance",
-            "avatar_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-            "phone": "+1 (555) 345-9876",
-            "address": "402 Silicon Ave, Ward 7",
-            "ward": "Ward 7 - Tech Corridor",
-            "role": "citizen",
-            "qr_token": "TOKEN-MARCUS-1003-DEF",
-            "eco_credits": 150.0
-        },
-        {
-            "citizen_id": "ECO-COL-501",
+            "citizen_id": "ECO-COL-2001",
             "email": "alex.collector@ecoloop.org",
             "full_name": "Alex Turner (Field Collector)",
             "avatar_url": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
-            "phone": "+1 (555) 901-2233",
+            "phone": "+1 (555) 987-6543",
             "address": "Municipal Sanitation Depot #4",
             "ward": "Ward 4 - Green Meadows",
             "role": "collector",
-            "qr_token": "TOKEN-ALEX-COL-501",
-            "eco_credits": 80.0
-        },
-        {
-            "citizen_id": "ECO-ADM-901",
-            "email": "sarah.admin@ecoloop.gov",
-            "full_name": "Sarah Jenkins (Ward Officer)",
-            "avatar_url": "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80",
-            "phone": "+1 (555) 444-9988",
-            "address": "Ward 4 Municipal Administrative Center",
-            "ward": "Ward 4 - Green Meadows",
-            "role": "admin",
-            "qr_token": "TOKEN-ADMIN-SARAH-901",
+            "qr_token": "ECO-COL-2001",
             "eco_credits": 0.0
         },
         {
-            "citizen_id": "ECO-ADM-999",
-            "email": "director.kumar@ecoloop.gov",
-            "full_name": "Director Rajesh Kumar",
+            "citizen_id": "ECO-ADM-3001",
+            "email": "sarah.admin@ecoloop.org",
+            "full_name": "Sarah Jenkins (Ward Officer)",
+            "avatar_url": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+            "phone": "+1 (555) 111-2222",
+            "address": "Ward 4 Municipal Administrative Center",
+            "ward": "Citywide Operations",
+            "role": "admin",
+            "qr_token": "ECO-ADM-3001",
+            "eco_credits": 0.0
+        },
+        {
+            "citizen_id": "ECO-ADM-3002",
+            "email": "director.kumar@ecoloop.org",
+            "full_name": "Director Rajesh Kumar (Chief Commissioner)",
             "avatar_url": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
             "phone": "+1 (555) 999-0000",
             "address": "Central Municipal Waste Command Center",
-            "ward": "City-Wide",
-            "role": "superadmin",
-            "qr_token": "TOKEN-SUPERADMIN-999",
+            "ward": "Central Headquarters",
+            "role": "admin",
+            "qr_token": "ECO-ADM-3002",
             "eco_credits": 0.0
         }
     ]
@@ -110,8 +86,8 @@ def seed_database(db: Session):
             "name": "Green Meadows Main Junction Camera #1",
             "ward": "Ward 4 - Green Meadows",
             "location_name": "Corner of 4th Ave & Pine St",
-            "latitude": 37.7749,
-            "longitude": -122.4194,
+            "latitude": 13.0827,
+            "longitude": 80.2707,
             "status": "operational",
             "resolution": "4K Ultra HD AI Vision",
             "ai_detection_enabled": True
@@ -121,8 +97,8 @@ def seed_database(db: Session):
             "name": "North Ring Road Dustbin Perimeter Cam",
             "ward": "Ward 4 - Green Meadows",
             "location_name": "North Ring Road Sector 8",
-            "latitude": 37.7790,
-            "longitude": -122.4230,
+            "latitude": 13.0878,
+            "longitude": 80.2785,
             "status": "damaged",
             "resolution": "1080p Optical Tracking",
             "ai_detection_enabled": False,
@@ -133,8 +109,8 @@ def seed_database(db: Session):
             "name": "Central Community Park Walkway Camera",
             "ward": "Ward 4 - Green Meadows",
             "location_name": "Central Park South Promenade",
-            "latitude": 37.7712,
-            "longitude": -122.4150,
+            "latitude": 13.0765,
+            "longitude": 80.2642,
             "status": "operational",
             "resolution": "4K Ultra HD AI Vision",
             "ai_detection_enabled": True
@@ -144,8 +120,8 @@ def seed_database(db: Session):
             "name": "Market Street Commercial Bin Camera",
             "ward": "Ward 4 - Green Meadows",
             "location_name": "Market St Commercial Lane 3",
-            "latitude": 37.7765,
-            "longitude": -122.4100,
+            "latitude": 13.0891,
+            "longitude": 80.2676,
             "status": "offline",
             "resolution": "1080p AI Vision",
             "ai_detection_enabled": False,
@@ -156,8 +132,8 @@ def seed_database(db: Session):
             "name": "Silicon Boulevard Transit Hub CCTV",
             "ward": "Ward 7 - Tech Corridor",
             "location_name": "Silicon Blvd & Cyber Way",
-            "latitude": 37.7830,
-            "longitude": -122.4080,
+            "latitude": 13.0648,
+            "longitude": 80.2834,
             "status": "operational",
             "resolution": "4K Ultra HD AI Vision",
             "ai_detection_enabled": True
@@ -167,8 +143,8 @@ def seed_database(db: Session):
             "name": "Lakeview Eco-Trail North Overlook",
             "ward": "Ward 7 - Tech Corridor",
             "location_name": "Eco Trail Overlook #2",
-            "latitude": 37.7870,
-            "longitude": -122.4130,
+            "latitude": 13.0475,
+            "longitude": 80.2824,
             "status": "operational",
             "resolution": "4K Ultra HD AI Vision",
             "ai_detection_enabled": True
@@ -284,56 +260,7 @@ def seed_database(db: Session):
     db.add_all([p1, p2, p3, p4])
     db.commit()
 
-    # 6. Waste Collection Records
-    c1 = WasteCollection(
-        collection_code="COL-2026-0012",
-        user_id=users["john.citizen@gmail.com"].id,
-        collector_id=users["alex.collector@ecoloop.org"].id,
-        waste_type="Recyclable Plastic",
-        weight_kg=8.5,
-        rate_per_kg=15.0,
-        credits_awarded=127.5,
-        collected_at=now - datetime.timedelta(days=4),
-        notes="Clean segregated HDPE bottles and milk cartons."
-    )
-    c2 = WasteCollection(
-        collection_code="COL-2026-0019",
-        user_id=users["john.citizen@gmail.com"].id,
-        collector_id=users["alex.collector@ecoloop.org"].id,
-        waste_type="Organic / Wet Waste",
-        weight_kg=14.0,
-        rate_per_kg=5.0,
-        credits_awarded=70.0,
-        collected_at=now - datetime.timedelta(days=2),
-        notes="Vegetable scraps and compostable leaves."
-    )
-    c3 = WasteCollection(
-        collection_code="COL-2026-0034",
-        user_id=users["priya.patel@gmail.com"].id,
-        collector_id=users["alex.collector@ecoloop.org"].id,
-        waste_type="E-Waste",
-        weight_kg=4.2,
-        rate_per_kg=50.0,
-        credits_awarded=210.0,
-        collected_at=now - datetime.timedelta(days=6),
-        notes="Old computer power supply, cables, and broken tablet."
-    )
-    c4 = WasteCollection(
-        collection_code="COL-2026-0040",
-        user_id=users["priya.patel@gmail.com"].id,
-        collector_id=users["alex.collector@ecoloop.org"].id,
-        waste_type="Paper & Cardboard",
-        weight_kg=25.0,
-        rate_per_kg=8.0,
-        credits_awarded=200.0,
-        collected_at=now - datetime.timedelta(days=1),
-        notes="Flattened cardboard shipping boxes."
-    )
-
-    db.add_all([c1, c2, c3, c4])
-    db.commit()
-
-    # 7. Rewards Catalog
+    # 6. Rewards Catalog
     rewards_data = [
         {
             "title": "Municipal Water Bill Rebate (15% Off)",
@@ -387,37 +314,6 @@ def seed_database(db: Session):
 
     for r in rewards_data:
         db.add(Reward(**r))
-    db.commit()
-
-    # 8. Past Reward Redemption for Priya
-    rdm = RewardRedemption(
-        redemption_code="RDM-2026-0089",
-        user_id=users["priya.patel@gmail.com"].id,
-        reward_id=1,
-        credits_spent=150.0,
-        redeemed_at=now - datetime.timedelta(days=3),
-        voucher_code="ECO-TAX-WTR-882940",
-        status="ACTIVE"
-    )
-    db.add(rdm)
-    db.commit()
-
-    # 9. Active On-Demand Waste Pickup Request from Johnathan Doe
-    req1 = WastePickupRequest(
-        request_code="REQ-2026-0091",
-        user_id=users["john.citizen@gmail.com"].id,
-        collector_id=users["alex.collector@ecoloop.org"].id,
-        ward="Ward 4 - Green Meadows",
-        address="124 Green Valley Road, Apt 4B",
-        phone="+1 (555) 234-5678",
-        waste_category="Recyclable Plastic",
-        estimated_weight_kg=8.0,
-        urgency="Immediate (Within 30 mins)",
-        notes="3 large bags of segregated clean plastic milk cartons and bottles ready at door.",
-        status="DISPATCHED",
-        created_at=now - datetime.timedelta(minutes=15)
-    )
-    db.add(req1)
     db.commit()
 
     print(">>> Eco Loop Database seeded successfully!")
