@@ -546,19 +546,20 @@ async function checkAndSeedFirestore(forceReset = false) {
         });
       }
 
-      console.log("✅ Firestore seeding completed successfully!");
-    }
+      // 7. Seed Transit Rewards
+      const rewardsSnap = await db.collection("rewards").get();
+      const deactivateBatch = db.batch();
+      rewardsSnap.docs.forEach(doc => deactivateBatch.update(doc.ref, { is_active: false }));
+      if (!rewardsSnap.empty) await deactivateBatch.commit();
+      for (const rwd of TRANSIT_REWARDS) {
+        await db.collection("rewards").doc(rwd.reward_code).set({
+          ...rwd,
+          is_active: true,
+          created_at: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }
 
-    const rewardsSnap = await db.collection("rewards").get();
-    const deactivateBatch = db.batch();
-    rewardsSnap.docs.forEach(doc => deactivateBatch.update(doc.ref, { is_active: false }));
-    if (!rewardsSnap.empty) await deactivateBatch.commit();
-    for (const rwd of TRANSIT_REWARDS) {
-      await db.collection("rewards").doc(rwd.reward_code).set({
-        ...rwd,
-        is_active: true,
-        created_at: firebase.firestore.FieldValue.serverTimestamp()
-      });
+      console.log("✅ Firestore seeding completed successfully!");
     }
   } catch (err) {
     console.warn("Firestore seeding notice (using local seed memory):", err);

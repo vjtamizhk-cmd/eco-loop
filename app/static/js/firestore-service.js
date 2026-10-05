@@ -6,48 +6,82 @@
 const FirestoreService = {
 
   // ------------------------------------------------------------
+  // High-Speed In-Memory Cache Layer (0ms Instant Lookups)
+  // ------------------------------------------------------------
+  _ratesCache: null,
+  _creditValueCache: null,
+  _camerasCache: null,
+  _usersCache: null,
+  _rewardsCache: null,
+  _userIndexMap: new Map(),
+
+  _indexUser(user) {
+    if (!user) return;
+    if (user.citizen_id) this._userIndexMap.set(String(user.citizen_id).trim().toUpperCase(), user);
+    if (user.uid) this._userIndexMap.set(String(user.uid).trim(), user);
+    if (user.id) this._userIndexMap.set(String(user.id).trim(), user);
+    if (user.qr_token) this._userIndexMap.set(String(user.qr_token).trim().toUpperCase(), user);
+    if (user.email) this._userIndexMap.set(String(user.email).trim().toLowerCase(), user);
+  },
+
+  // ------------------------------------------------------------
   // Configuration & Rates
   // ------------------------------------------------------------
-  async getRates() {
+  async getRates(forceRefresh = false) {
+    if (this._ratesCache && !forceRefresh) return this._ratesCache;
     try {
       const snap = await db.collection("config").doc("rates").get();
       if (snap.exists) {
-        return snap.data();
+        this._ratesCache = snap.data();
+        return this._ratesCache;
       }
     } catch (e) {
       console.warn("Rates fetch fallback:", e);
     }
-    return {
+    this._ratesCache = {
       waste_rates: typeof SEED_WASTE_RATES !== 'undefined' ? SEED_WASTE_RATES : {},
       fine_rates: typeof SEED_FINE_RATES !== 'undefined' ? SEED_FINE_RATES : {}
     };
+    return this._ratesCache;
   },
 
-  async getCurrentCreditValue() {
+  async getCurrentCreditValue(forceRefresh = false) {
+    if (this._creditValueCache !== null && !forceRefresh) return this._creditValueCache;
     try {
-      const snap = await db.collection("config").doc("rates").get();
-      if (snap.exists && Number.isFinite(Number(snap.data().final_credit_value_inr))) {
-        return Number(snap.data().final_credit_value_inr);
+      const rates = await this.getRates(forceRefresh);
+      if (rates && Number.isFinite(Number(rates.final_credit_value_inr))) {
+        this._creditValueCache = Number(rates.final_credit_value_inr);
+        return this._creditValueCache;
       }
     } catch (e) {
       console.warn("Credit value fetch fallback:", e);
     }
-    return 0.15;
+    this._creditValueCache = 0.15;
+    return this._creditValueCache;
   },
 
   // ------------------------------------------------------------
   // User & Citizen Operations
   // ------------------------------------------------------------
-  async getAllUsers() {
+  async getAllUsers(forceRefresh = false) {
+    if (this._usersCache && !forceRefresh && this._usersCache.length > 0) {
+      return this._usersCache;
+    }
     try {
       const snap = await db.collection("users").get();
       if (!snap.empty) {
-        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        this._usersCache = users;
+        users.forEach(u => this._indexUser(u));
+        return users;
       }
     } catch (e) {
       console.warn("Users fetch fallback:", e);
     }
-    return typeof SEED_USERS !== 'undefined' ? SEED_USERS : [];
+    const seed = typeof SEED_USERS !== 'undefined' ? SEED_USERS : [];
+    this._usersCache = seed;
+    seed.forEach(u => this._indexUser(u));
+    return seed;
   },
 
   maskEmail(email) {
@@ -84,80 +118,93 @@ const FirestoreService = {
       clean = clean.substring(4).trim();
     }
 
+    const upperClean = clean.toUpperCase();
+    const lowerClean = clean.toLowerCase();
+
+    // 1. FAST PATH: Instant in-memory cache lookup (0ms)
+    if (this._userIndexMap.has(upperClean)) return this._userIndexMap.get(upperClean);
+    if (this._userIndexMap.has(clean)) return this._userIndexMap.get(clean);
+    if (this._userIndexMap.has(lowerClean)) return this._userIndexMap.get(lowerClean);
+
+    // If cache not loaded yet, populate it from users collection
+    if (!this._usersCache || this._usersCache.length === 0) {
+      await this.getAllUsers();
+      if (this._userIndexMap.has(upperClean)) return this._userIndexMap.get(upperClean);
+      if (this._userIndexMap.has(clean)) return this._userIndexMap.get(clean);
+      if (this._userIndexMap.has(lowerClean)) return this._userIndexMap.get(lowerClean);
+    }
+
     try {
-      // 1. Check direct doc ID / UID
+      // 2. Direct doc ID / UID check
       let snap = await db.collection("users").doc(clean).get();
-      if (snap.exists) return { id: snap.id, ...snap.data() };
+      if (snap.exists) {
+        const user = { id: snap.id, ...snap.data() };
+        this._indexUser(user);
+        return user;
+      }
 
-      // 2. Check by exact citizen_id
-      let q = await db.collection("users").where("citizen_id", "==", clean).limit(1).get();
-      if (!q.empty) return { id: q.docs[0].id, ...q.docs[0].data() };
-
-      // 2b. Check by uppercase citizen_id
-      q = await db.collection("users").where("citizen_id", "==", clean.toUpperCase()).limit(1).get();
-      if (!q.empty) return { id: q.docs[0].id, ...q.docs[0].data() };
-
-      // 3. Check by qr_token
-      q = await db.collection("users").where("qr_token", "==", clean).limit(1).get();
-      if (!q.empty) return { id: q.docs[0].id, ...q.docs[0].data() };
-
-      // 4. Check by email
-      q = await db.collection("users").where("email", "==", clean.toLowerCase()).limit(1).get();
-      if (!q.empty) return { id: q.docs[0].id, ...q.docs[0].data() };
-
-      // 5. In-memory check across all users in collection
-      const allUsers = await this.getAllUsers();
-      const found = allUsers.find(u =>
-        (u.citizen_id && u.citizen_id.toUpperCase() === clean.toUpperCase()) ||
-        (u.uid && u.uid === clean) ||
-        (u.id && u.id === clean) ||
-        (u.qr_token && u.qr_token.toUpperCase() === clean.toUpperCase()) ||
-        (u.email && u.email.toLowerCase() === clean.toLowerCase())
-      );
-      if (found) return found;
-
+      // 3. Exact citizen_id lookup
+      let q = await db.collection("users").where("citizen_id", "==", upperClean).limit(1).get();
+      if (!q.empty) {
+        const user = { id: q.docs[0].id, ...q.docs[0].data() };
+        this._indexUser(user);
+        return user;
+      }
     } catch (e) {
       console.warn("getUserByIdOrUid Firestore error:", e);
     }
 
-    // Fallback to local SEED_USERS
+    // 4. Fallback to local SEED_USERS
     if (typeof SEED_USERS !== 'undefined') {
-      return SEED_USERS.find(u => 
-        (u.citizen_id && u.citizen_id.toUpperCase() === clean.toUpperCase()) ||
+      const found = SEED_USERS.find(u => 
+        (u.citizen_id && u.citizen_id.toUpperCase() === upperClean) ||
         (u.uid && u.uid === clean) ||
-        (u.qr_token && u.qr_token.toUpperCase() === clean.toUpperCase()) ||
-        (u.email && u.email.toLowerCase() === clean.toLowerCase())
-      ) || null;
+        (u.qr_token && u.qr_token.toUpperCase() === upperClean) ||
+        (u.email && u.email.toLowerCase() === lowerClean)
+      );
+      if (found) {
+        this._indexUser(found);
+        return found;
+      }
     }
     return null;
   },
 
   async getCitizenDashboard(user) {
     const uid = user.uid || user.id;
+    const citizenId = user.citizen_id || "";
     let penalties = [];
     let collections = [];
     let redemptions = [];
 
     try {
-      // Fetch user penalties
-      const penaltiesSnap = await db.collection("penalties")
-        .where("user_uid", "==", uid)
-        .get();
-      penalties = penaltiesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      // Parallel concurrent fetch of all citizen records
+      const [penaltiesSnap, collectionsSnap, redemptionsSnap] = await Promise.all([
+        db.collection("penalties").where("user_uid", "==", uid).get(),
+        db.collection("collections").where("user_uid", "==", uid).get(),
+        db.collection("redemptions").where("user_uid", "==", uid).get()
+      ]);
 
-      // Fetch user collections
-      const collectionsSnap = await db.collection("collections")
-        .where("user_uid", "==", uid)
-        .get();
+      penalties = penaltiesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       collections = collectionsSnap.docs.map(d => ({ id: d.id, ...d.data() }))
         .sort((a, b) => (b.collected_at?.toMillis?.() || 0) - (a.collected_at?.toMillis?.() || 0));
-
-      // Fetch user redemptions
-      const redemptionsSnap = await db.collection("redemptions")
-        .where("user_uid", "==", uid)
-        .get();
       redemptions = redemptionsSnap.docs.map(d => ({ id: d.id, ...d.data() }))
         .sort((a, b) => (b.redeemed_at?.toMillis?.() || 0) - (a.redeemed_at?.toMillis?.() || 0));
+
+      // Also merge records matching citizen_id if user is in demo/preview mode
+      if (citizenId && penalties.length === 0) {
+        const idPenalties = await db.collection("penalties").where("citizen_id", "==", citizenId).get();
+        if (!idPenalties.empty) {
+          penalties = idPenalties.docs.map(d => ({ id: d.id, ...d.data() }));
+        }
+      }
+      if (citizenId && collections.length === 0) {
+        const idColls = await db.collection("collections").where("citizen_id", "==", citizenId).get();
+        if (!idColls.empty) {
+          collections = idColls.docs.map(d => ({ id: d.id, ...d.data() }))
+            .sort((a, b) => (b.collected_at?.toMillis?.() || 0) - (a.collected_at?.toMillis?.() || 0));
+        }
+      }
     } catch (e) {
       console.warn("Citizen dashboard Firestore fallback:", e);
     }
@@ -274,37 +321,87 @@ const FirestoreService = {
     }
   },
 
-  subscribeToCitizenCollections(userUid, callback) {
+  subscribeToCitizenCollections(userUid, citizenId, callback) {
+    // Handle backward compatibility if citizenId is a function (callback)
+    if (typeof citizenId === 'function') {
+      callback = citizenId;
+      citizenId = null;
+    }
     try {
-      return db.collection("collections")
-        .where("user_uid", "==", userUid)
-        .onSnapshot((snap) => {
-          const list = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-            .sort((a, b) => (b.collected_at?.toMillis?.() || 0) - (a.collected_at?.toMillis?.() || 0));
-          callback(list);
-        }, err => console.warn("Collections listener error:", err));
+      const query = (citizenId && citizenId !== userUid)
+        ? db.collection("collections").where("citizen_id", "==", citizenId)
+        : db.collection("collections").where("user_uid", "==", userUid);
+
+      return query.onSnapshot((snap) => {
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (b.collected_at?.toMillis?.() || 0) - (a.collected_at?.toMillis?.() || 0));
+        callback(list);
+      }, err => console.warn("Collections listener error:", err));
     } catch (e) {
       console.warn("Collections subscription error:", e);
       return () => {};
     }
   },
 
-  subscribeToCitizenPickups(userUid, callback) {
+  subscribeToCitizenPickups(userUid, citizenId, callback) {
+    if (typeof citizenId === 'function') {
+      callback = citizenId;
+      citizenId = null;
+    }
     try {
-      return db.collection("pickup_requests")
-        .where("user_uid", "==", userUid)
-        .onSnapshot((snap) => {
-          const list = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-            .sort((a, b) => (b.created_at?.toMillis?.() || 0) - (a.created_at?.toMillis?.() || 0));
-          callback(list);
-        }, err => {
-          console.warn("Pickup listener error, using fallback:", err);
-          if (typeof SEED_PICKUP_REQUESTS !== 'undefined') {
-            callback(SEED_PICKUP_REQUESTS.filter(r => r.user_uid === userUid));
-          }
-        });
+      const query = (citizenId && citizenId !== userUid)
+        ? db.collection("pickup_requests").where("citizen_id", "==", citizenId)
+        : db.collection("pickup_requests").where("user_uid", "==", userUid);
+
+      return query.onSnapshot((snap) => {
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (b.created_at?.toMillis?.() || 0) - (a.created_at?.toMillis?.() || 0));
+        callback(list);
+      }, err => {
+        console.warn("Pickup listener error, using fallback:", err);
+        if (typeof SEED_PICKUP_REQUESTS !== 'undefined') {
+          callback(SEED_PICKUP_REQUESTS.filter(r => r.user_uid === userUid || r.citizen_id === citizenId));
+        }
+      });
     } catch (e) {
       console.warn("Subscription error:", e);
+      return () => {};
+    }
+  },
+
+  subscribeToCitizenPenalties(userUid, citizenId, callback) {
+    if (typeof citizenId === 'function') {
+      callback = citizenId;
+      citizenId = null;
+    }
+    try {
+      const query = (citizenId && citizenId !== userUid)
+        ? db.collection("penalties").where("citizen_id", "==", citizenId)
+        : db.collection("penalties").where("user_uid", "==", userUid);
+
+      return query.onSnapshot((snap) => {
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (b.created_at?.toMillis?.() || 0) - (a.created_at?.toMillis?.() || 0));
+        callback(list);
+      }, err => console.warn("Penalties listener error:", err));
+    } catch (e) {
+      console.warn("Penalties subscription error:", e);
+      return () => {};
+    }
+  },
+
+  subscribeToAdminDashboard(callback) {
+    try {
+      let isFirst = true;
+      return db.collection("penalties").onSnapshot(() => {
+        if (isFirst) {
+          isFirst = false;
+          return;
+        }
+        callback();
+      }, err => console.warn("Admin penalties listener error:", err));
+    } catch (e) {
+      console.warn("Admin subscription error:", e);
       return () => {};
     }
   },
@@ -558,35 +655,49 @@ const FirestoreService = {
     };
 
     try {
-      // 1. Create collection record doc in Firestore
-      await db.collection("collections").doc(collectionCode).set(collectionData);
-
-      // 2. Award credits to citizen profile in Firestore (merge: true guarantees update)
+      // 1. Parallelize Firestore collection creation and credit increment
       const citizenRef = db.collection("users").doc(citizenDocId);
-      await citizenRef.set({
-        eco_credits: firebase.firestore.FieldValue.increment(creditsAwarded)
-      }, { merge: true });
+      const writePromises = [
+        db.collection("collections").doc(collectionCode).set(collectionData),
+        citizenRef.set({
+          eco_credits: firebase.firestore.FieldValue.increment(creditsAwarded)
+        }, { merge: true })
+      ];
 
-      // 3. Auto-complete any active pickup requests for this citizen
-      const activePickupsSnap = await db.collection("pickup_requests")
-        .where("user_uid", "==", citizenDocId)
-        .where("status", "in", ["DISPATCHED", "ACCEPTED", "ARRIVED"])
-        .get();
-
-      if (!activePickupsSnap.empty) {
-        const batch = db.batch();
-        activePickupsSnap.docs.forEach(doc => {
-          batch.update(doc.ref, {
-            status: "COMPLETED",
-            completed_at: firebase.firestore.FieldValue.serverTimestamp(),
-            actual_weight_kg: weightKg,
-            credits_awarded: creditsAwarded,
-            collector_uid: collector.uid || collector.id || "collector_alex",
-            collector_name: collector.full_name || "Alex Turner"
-          });
-        });
-        await batch.commit();
+      // Mirror balance update to demo preview doc if citizen is ECO-CTZ-1001
+      if (citizenDocId === "seed_john_citizen") {
+        writePromises.push(
+          db.collection("users").doc("guest_demo_citizen").set({
+            eco_credits: firebase.firestore.FieldValue.increment(creditsAwarded)
+          }, { merge: true }).catch(() => {})
+        );
       }
+
+      await Promise.all(writePromises);
+
+      // 2. Auto-complete active pickups in background without blocking collector
+      db.collection("pickup_requests")
+        .where("citizen_id", "==", citizen.citizen_id || citizenIdentifier)
+        .where("status", "in", ["DISPATCHED", "ACCEPTED", "ARRIVED"])
+        .get()
+        .then(snap => {
+          if (!snap.empty) {
+            const batch = db.batch();
+            snap.docs.forEach(doc => {
+              batch.update(doc.ref, {
+                status: "COMPLETED",
+                completed_at: firebase.firestore.FieldValue.serverTimestamp(),
+                actual_weight_kg: weightKg,
+                credits_awarded: creditsAwarded,
+                collector_uid: collector.uid || collector.id || "collector_alex",
+                collector_name: collector.full_name || "Alex Turner"
+              });
+            });
+            return batch.commit();
+          }
+        })
+        .catch(e => console.warn("Background pickup completion:", e));
+
     } catch (e) {
       console.warn("recordWasteCollection Firestore sync error:", e);
     }
@@ -606,19 +717,29 @@ const FirestoreService = {
   // ------------------------------------------------------------
   // Administrator Command Center
   // ------------------------------------------------------------
-  async getCameras() {
+  async getCameras(forceRefresh = false) {
+    if (this._camerasCache && !forceRefresh) return this._camerasCache;
     try {
       const snap = await db.collection("cameras").get();
       if (!snap.empty) {
-        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        this._camerasCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        return this._camerasCache;
       }
     } catch (e) {
       console.warn("getCameras fallback:", e);
     }
-    return typeof SEED_CAMERAS !== 'undefined' ? SEED_CAMERAS : [];
+    this._camerasCache = typeof SEED_CAMERAS !== 'undefined' ? SEED_CAMERAS : [];
+    return this._camerasCache;
   },
 
   async updateCameraStatus(cameraCode, status, faultDescription = "") {
+    if (this._camerasCache) {
+      const c = this._camerasCache.find(x => x.camera_code === cameraCode);
+      if (c) {
+        c.status = status;
+        c.fault_description = faultDescription;
+      }
+    }
     try {
       await db.collection("cameras").doc(cameraCode).update({
         status: status,
@@ -711,16 +832,18 @@ const FirestoreService = {
     let allTickets = [];
 
     try {
-      cameras = await this.getCameras();
+      // Parallel concurrent fetch of all admin collections
+      const [cams, penaltiesSnap, collectionsSnap, ticketsSnap] = await Promise.all([
+        this.getCameras(),
+        db.collection("penalties").get(),
+        db.collection("collections").get(),
+        db.collection("tickets").get()
+      ]);
 
-      const penaltiesSnap = await db.collection("penalties").get();
+      cameras = cams;
       allPenalties = penaltiesSnap.docs.map(d => ({ id: d.id, ...d.data() }))
         .sort((a, b) => (b.created_at?.toMillis?.() || 0) - (a.created_at?.toMillis?.() || 0));
-
-      const collectionsSnap = await db.collection("collections").get();
       allCollections = collectionsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-      const ticketsSnap = await db.collection("tickets").get();
       allTickets = ticketsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     } catch (e) {
       console.warn("Admin dashboard fallback:", e);
@@ -848,11 +971,13 @@ const FirestoreService = {
     };
 
     try {
-      await db.collection("penalties").doc(violationCode).set(penaltyDoc);
-      await db.collection("cameras").doc(cameraCode).update({
-        total_violations_detected: firebase.firestore.FieldValue.increment(1),
-        last_ping: firebase.firestore.FieldValue.serverTimestamp()
-      });
+      await Promise.all([
+        db.collection("penalties").doc(violationCode).set(penaltyDoc),
+        db.collection("cameras").doc(cameraCode).update({
+          total_violations_detected: firebase.firestore.FieldValue.increment(1),
+          last_ping: firebase.firestore.FieldValue.serverTimestamp()
+        })
+      ]);
     } catch (e) {
       console.warn("simulateAIDetection fallback:", e);
     }

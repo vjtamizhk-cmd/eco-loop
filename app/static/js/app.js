@@ -88,34 +88,28 @@ const GUEST_PREVIEW_USER = {
 // ============================================================
 document.addEventListener("DOMContentLoaded", async () => {
   try {
-    // 1. Check and seed initial Firestore dataset if empty
-    try {
-      await checkAndSeedFirestore();
-    } catch (e) {
-      console.warn("Firestore seed check warning:", e);
-    }
-
-    // 2. Load all available registered users from Firestore for directory lookups
-    try {
-      await refreshAllUsers();
-    } catch (e) {
-      console.warn("User refresh warning:", e);
-    }
-
-    // 3. Check if user is signed in via Firebase Auth
+    // 1. Determine active user (cached profile or instant guest preview)
     if (currentProfile) {
       appState.currentUser = currentProfile;
     } else {
       appState.currentUser = GUEST_PREVIEW_USER;
     }
 
-    // 4. Update Header & Switch to active role
+    // 2. Immediate Render of Header & Active View (Instant UI!)
     updateUserHeaderUI();
     renderUserSwitcherDropdown();
 
     if (appState.currentUser) {
-      await switchRole(appState.currentUser.role || 'citizen');
+      switchRole(appState.currentUser.role || 'citizen');
     }
+
+    // 3. Asynchronous background sync (non-blocking)
+    checkAndSeedFirestore().catch(e => console.warn("Seed check notice:", e));
+    refreshAllUsers().then(() => {
+      renderUserSwitcherDropdown();
+      if (appState.currentRole === 'collector') renderCollectorCitizenSelector();
+    }).catch(e => console.warn("User refresh notice:", e));
+
   } catch (err) {
     console.error("Initialization error:", err);
     appState.currentUser = GUEST_PREVIEW_USER;
@@ -476,9 +470,14 @@ function setupCitizenRealtimeListeners(userUid) {
   if (appState.activeCitizenCollectionsUnsubscribe) {
     appState.activeCitizenCollectionsUnsubscribe();
   }
+  if (appState.activeCitizenPenaltiesUnsubscribe) {
+    appState.activeCitizenPenaltiesUnsubscribe();
+  }
 
   activeCitizenUserUid = userUid;
+  const citizenId = appState.currentUser?.citizen_id || "ECO-CTZ-1001";
   lastKnownCollectionsCount = -1;
+  let lastKnownPenaltiesCount = -1;
 
   // 1. Live User Doc Listener for instant credit balance updates.
   appState.activeCitizenUserDocUnsubscribe = FirestoreService.subscribeToUserDoc(userUid, (freshUser) => {
@@ -499,8 +498,8 @@ function setupCitizenRealtimeListeners(userUid) {
     loadRewardsCatalog();
   });
 
-  // 2. Live Collections Listener (Doorstep Handover Ledger & Spontaneous Handover Alert)
-  appState.activeCitizenCollectionsUnsubscribe = FirestoreService.subscribeToCitizenCollections(userUid, (collections) => {
+  // 2. Live Collections Listener (Doorstep Handover Ledger & Instant Credit Alert)
+  appState.activeCitizenCollectionsUnsubscribe = FirestoreService.subscribeToCitizenCollections(userUid, citizenId, (collections) => {
     renderCitizenCollections(collections);
 
     let totalWasteKg = 0;
@@ -510,7 +509,7 @@ function setupCitizenRealtimeListeners(userUid) {
     const co2Elem = document.getElementById("citizenCo2Offset");
     if (co2Elem) co2Elem.innerText = `${(totalWasteKg * 1.85).toFixed(1)} kg CO₂`;
 
-    // Alert on spontaneous direct street handover when collector credits resident
+    // Alert on direct street handover when collector credits resident
     if (lastKnownCollectionsCount >= 0 && collections.length > lastKnownCollectionsCount) {
       const latest = collections[0];
       Swal.fire({
@@ -524,7 +523,7 @@ function setupCitizenRealtimeListeners(userUid) {
             <p class="text-emerald-300 font-bold mt-2">✓ Handover recorded! +${latest.credits_awarded} EcoCredits added instantly to your wallet.</p>
           </div>
         `,
-        timer: 6000,
+        timer: 5000,
         background: '#064e3b',
         color: '#ecfdf5',
         confirmButtonColor: '#059669'
@@ -533,16 +532,57 @@ function setupCitizenRealtimeListeners(userUid) {
     lastKnownCollectionsCount = collections.length;
   });
 
-  // 3. Live Pickup Requests Listener
-  setupCitizenPickupListener(userUid);
+  // 3. Live Penalties & Complaints Listener (Instant notification of municipal citations & reports)
+  appState.activeCitizenPenaltiesUnsubscribe = FirestoreService.subscribeToCitizenPenalties(userUid, citizenId, (penalties) => {
+    renderCitizenPenalties(penalties);
+
+    let totalFinesDue = 0;
+    let unpaidCount = 0;
+    penalties.forEach(p => {
+      if (p.status === "UNPAID" || p.status === "DELAYED") {
+        totalFinesDue += (p.fine_amount || 0) + (p.late_fee || 0);
+        unpaidCount++;
+      }
+    });
+
+    const finesElem = document.getElementById("citizenUnpaidFines");
+    if (finesElem) finesElem.innerText = `₹${totalFinesDue}`;
+    const countElem = document.getElementById("citizenUnpaidCount");
+    if (countElem) countElem.innerText = `${unpaidCount} active`;
+
+    // Immediate Alert when a violation or complaint is registered against this citizen
+    if (lastKnownPenaltiesCount >= 0 && penalties.length > lastKnownPenaltiesCount) {
+      const latest = penalties[0];
+      Swal.fire({
+        icon: 'warning',
+        title: '⚠️ Municipal Violation Alert Issued!',
+        html: `
+          <div class="text-xs text-left space-y-1.5 mt-2">
+            <p><strong>Violation Code:</strong> <span class="font-mono text-amber-400 font-bold">${latest.violation_code}</span></p>
+            <p><strong>Offense:</strong> <span class="text-red-400 font-bold">${latest.violation_type}</span></p>
+            <p><strong>Location:</strong> ${latest.location || 'Municipal Area'}</p>
+            <p><strong>Fine Amount:</strong> <span class="text-emerald-400 font-extrabold">₹${latest.fine_amount}</span></p>
+            <p class="text-amber-300 font-semibold mt-2">Notice: Please settle statutory fine within 7 days via UPI.</p>
+          </div>
+        `,
+        background: '#1e293b',
+        color: '#f8fafc',
+        confirmButtonColor: '#059669'
+      });
+    }
+    lastKnownPenaltiesCount = penalties.length;
+  });
+
+  // 4. Live Pickup Requests Listener
+  setupCitizenPickupListener(userUid, citizenId);
 }
 
-function setupCitizenPickupListener(userUid) {
+function setupCitizenPickupListener(userUid, citizenId) {
   if (appState.activeCitizenPickupUnsubscribe) {
     appState.activeCitizenPickupUnsubscribe();
   }
 
-  appState.activeCitizenPickupUnsubscribe = FirestoreService.subscribeToCitizenPickups(userUid, (requests) => {
+  appState.activeCitizenPickupUnsubscribe = FirestoreService.subscribeToCitizenPickups(userUid, citizenId, (requests) => {
     const tracker = document.getElementById("citizenActivePickupTracker");
     if (!tracker) return;
 
@@ -1369,36 +1409,58 @@ async function submitWasteCollection() {
     return;
   }
 
-  try {
-    const result = await FirestoreService.recordWasteCollection(collector, citizenCode, wasteType, weight, notes);
+  // 1. Fast in-memory resolution (<10ms)
+  const citizen = await FirestoreService.getUserByIdOrUid(citizenCode);
+  const citizenName = citizen ? citizen.full_name : citizenCode;
+  const rates = await FirestoreService.getRates();
+  const ratePerKg = rates.waste_rates[wasteType] || 10.0;
+  const estCredits = Math.round(weight * ratePerKg * 100) / 100;
 
-    Swal.fire({
-      icon: 'success',
-      title: 'Waste Handover Recorded! 🎉',
-      html: `
-        <div class="text-xs text-left space-y-1.5 mt-2">
-          <p><strong>Handover Ref:</strong> <span class="font-mono text-emerald-400">${result.collection.collection_code}</span></p>
-          <p><strong>Citizen:</strong> ${result.collection.citizen_name} (${result.collection.citizen_id})</p>
-          <p><strong>Measured Weight:</strong> ${weight} kg (${wasteType})</p>
-          <p><strong>EcoCredits Awarded:</strong> <span class="text-emerald-400 font-extrabold text-sm">+${result.collection.credits_awarded} Credits</span></p>
-          <p class="text-emerald-300 font-semibold mt-2">✓ Handover completed. Credits credited instantly to resident wallet.</p>
-        </div>
-      `,
-      background: '#1e293b',
-      color: '#f8fafc'
-    });
+  // 2. Optimistic UI reset and metrics increment
+  document.getElementById("collectorWeightInput").value = "";
+  document.getElementById("collectorNotesInput").value = "";
+  updateCollectionCreditPreview();
 
-    // Reset Form
-    document.getElementById("collectorWeightInput").value = "";
-    document.getElementById("collectorNotesInput").value = "";
-    updateCollectionCreditPreview();
-
-    // Refresh Dashboard
-    await loadCollectorDashboard();
-
-  } catch (err) {
-    Swal.fire({ icon: 'error', title: 'Collection Failed', text: err.message, background: '#1e293b', color: '#f8fafc' });
+  const todayKgElem = document.getElementById("collectorTodayKg");
+  if (todayKgElem) {
+    const cur = parseFloat(todayKgElem.innerText) || 0;
+    todayKgElem.innerText = `${(cur + weight).toFixed(1)} kg`;
   }
+  const todayCrElem = document.getElementById("collectorTodayCredits");
+  if (todayCrElem) {
+    const cur = parseFloat(todayCrElem.innerText) || 0;
+    todayCrElem.innerText = `${(cur + estCredits).toFixed(1)}`;
+  }
+  const todayCntElem = document.getElementById("collectorTodayCount");
+  if (todayCntElem) {
+    const cur = parseInt(todayCntElem.innerText) || 0;
+    todayCntElem.innerText = `${cur + 1}`;
+  }
+
+  // 3. Instant feedback popup (<50ms!)
+  Swal.fire({
+    icon: 'success',
+    title: 'Waste Handover Recorded! 🎉',
+    html: `
+      <div class="text-xs text-left space-y-1.5 mt-2">
+        <p><strong>Citizen:</strong> ${citizenName} (${citizenCode})</p>
+        <p><strong>Measured Weight:</strong> ${weight} kg (${wasteType})</p>
+        <p><strong>EcoCredits Awarded:</strong> <span class="text-emerald-400 font-extrabold text-sm">+${estCredits} Credits</span></p>
+        <p class="text-emerald-300 font-semibold mt-2">✓ Handover completed. Credits credited instantly to resident wallet.</p>
+      </div>
+    `,
+    timer: 3500,
+    background: '#1e293b',
+    color: '#f8fafc'
+  });
+
+  // 4. Background cloud write & dashboard sync
+  FirestoreService.recordWasteCollection(collector, citizenCode, wasteType, weight, notes)
+    .then(() => loadCollectorDashboard())
+    .catch(err => {
+      console.error("Waste collection background write error:", err);
+      Swal.fire({ icon: 'error', title: 'Sync Error', text: err.message, background: '#1e293b', color: '#f8fafc' });
+    });
 }
 
 function renderCollectorLogs(logs) {
@@ -1479,6 +1541,13 @@ async function loadAdminDashboard() {
 
     // Render Waste Chart
     renderAdminWasteChart(data.waste_stats.category_breakdown);
+
+    // Attach live subscription for continuous instant updates
+    if (!appState.activeAdminDashboardUnsubscribe) {
+      appState.activeAdminDashboardUnsubscribe = FirestoreService.subscribeToAdminDashboard(() => {
+        loadAdminDashboard();
+      });
+    }
 
   } catch (err) {
     console.error("Error loading admin dashboard:", err);

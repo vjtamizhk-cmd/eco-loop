@@ -22,6 +22,17 @@ if (!firebase.apps.length) {
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+// Enable Firestore Offline Persistence & Multi-Tab Synchronization for 0ms Instant Reads
+db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
+  if (err.code === 'failed-precondition') {
+    console.warn("Firestore persistence: multiple tabs open, falling back to active tab.");
+  } else if (err.code === 'unimplemented') {
+    console.warn("Firestore persistence not supported by browser engine.");
+  } else {
+    console.warn("Firestore persistence notice:", err);
+  }
+});
+
 // Global Auth State
 let currentAuthUser = null;
 let currentProfile = null;
