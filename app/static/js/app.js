@@ -362,25 +362,32 @@ async function handleSignOut() {
 async function switchRole(role) {
   appState.currentRole = role;
 
-  // Update Header Mode Badge
+  // Update Header Mode Badge & Segmented Control
   const headerIcon = document.getElementById("roleHeaderIcon");
   const headerText = document.getElementById("roleHeaderText");
 
   if (headerIcon && headerText) {
     if (role === 'citizen') {
-      headerIcon.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse";
-      headerText.innerText = "👤 Citizen Account Portal";
-      headerText.className = "text-xs font-bold text-emerald-300 uppercase tracking-wider";
+      headerIcon.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+      headerText.innerText = "Citizen Portal";
+      headerText.className = "text-xs font-semibold text-emerald-400 font-mono tracking-wide uppercase";
     } else if (role === 'collector') {
-      headerIcon.className = "w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse";
-      headerText.innerText = "🚛 Collector Field Hub";
-      headerText.className = "text-xs font-bold text-amber-300 uppercase tracking-wider";
+      headerIcon.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
+      headerText.innerText = "Collector Field Hub";
+      headerText.className = "text-xs font-semibold text-amber-400 font-mono tracking-wide uppercase";
     } else {
-      headerIcon.className = "w-2.5 h-2.5 rounded-full bg-purple-500 animate-pulse";
-      headerText.innerText = "🛡️ Administrator Command Center";
-      headerText.className = "text-xs font-bold text-purple-300 uppercase tracking-wider";
+      headerIcon.className = "w-2 h-2 rounded-full bg-purple-400 animate-pulse";
+      headerText.innerText = "Administrator Console";
+      headerText.className = "text-xs font-semibold text-purple-400 font-mono tracking-wide uppercase";
     }
   }
+
+  // Update Role Segmented Control Buttons
+  document.querySelectorAll('.role-segmented-btn').forEach(btn => {
+    const targetRole = btn.dataset.role;
+    const isActive = targetRole === role || (targetRole === 'admin' && (role === 'superadmin' || role === 'admin'));
+    btn.classList.toggle('is-active', isActive);
+  });
 
   // Strictly enforce view visibility
   const citizenView = document.getElementById("citizenView");
@@ -514,18 +521,18 @@ function setupCitizenRealtimeListeners(userUid) {
       const latest = collections[0];
       Swal.fire({
         icon: 'success',
-        title: `🎉 +${latest.credits_awarded} EcoCredits Awarded!`,
+        title: `+${latest.credits_awarded} EcoCredits Awarded`,
         html: `
-          <div class="text-xs text-left space-y-1.5 mt-2">
+          <div class="text-xs text-left space-y-1.5 mt-2 font-sans">
             <p><strong>Handover Ref:</strong> <span class="font-mono text-emerald-400 font-bold">${latest.collection_code}</span></p>
             <p><strong>Collector:</strong> ${latest.collector_name || 'Alex Turner'} (${latest.ward || 'Ward 4'})</p>
             <p><strong>Waste Measured:</strong> ${latest.weight_kg} kg ${latest.waste_type}</p>
-            <p class="text-emerald-300 font-bold mt-2">✓ Handover recorded! +${latest.credits_awarded} EcoCredits added instantly to your wallet.</p>
+            <p class="text-emerald-400 font-semibold mt-2">Handover confirmed! +${latest.credits_awarded} EcoCredits deposited to your wallet.</p>
           </div>
         `,
         timer: 5000,
-        background: '#064e3b',
-        color: '#ecfdf5',
+        background: '#0f172a',
+        color: '#f8fafc',
         confirmButtonColor: '#059669'
       });
     }
@@ -555,17 +562,17 @@ function setupCitizenRealtimeListeners(userUid) {
       const latest = penalties[0];
       Swal.fire({
         icon: 'warning',
-        title: '⚠️ Municipal Violation Alert Issued!',
+        title: 'Municipal Citation Notice',
         html: `
-          <div class="text-xs text-left space-y-1.5 mt-2">
+          <div class="text-xs text-left space-y-1.5 mt-2 font-sans">
             <p><strong>Violation Code:</strong> <span class="font-mono text-amber-400 font-bold">${latest.violation_code}</span></p>
             <p><strong>Offense:</strong> <span class="text-red-400 font-bold">${latest.violation_type}</span></p>
             <p><strong>Location:</strong> ${latest.location || 'Municipal Area'}</p>
-            <p><strong>Fine Amount:</strong> <span class="text-emerald-400 font-extrabold">₹${latest.fine_amount}</span></p>
-            <p class="text-amber-300 font-semibold mt-2">Notice: Please settle statutory fine within 7 days via UPI.</p>
+            <p><strong>Fine Amount:</strong> <span class="text-emerald-400 font-mono font-extrabold">₹${latest.fine_amount}</span></p>
+            <p class="text-slate-400 font-medium mt-2">Notice: Please settle statutory fine within 7 days to avoid late surcharge.</p>
           </div>
         `,
-        background: '#1e293b',
+        background: '#0f172a',
         color: '#f8fafc',
         confirmButtonColor: '#059669'
       });
@@ -591,19 +598,19 @@ function setupCitizenPickupListener(userUid, citizenId) {
 
     if (activeReq) {
       tracker.classList.remove("hidden");
-      let statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-900 text-amber-200 border border-amber-700 animate-pulse">DISPATCHED 🟡</span>`;
+      let statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-950 text-amber-300 border border-amber-800">DISPATCHED</span>`;
       let statusDesc = `Searching for nearby squad in ${activeReq.ward}...`;
 
       if (activeReq.status === "ACCEPTED") {
-        statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-900 text-blue-200 border border-blue-700 animate-pulse">EN ROUTE 🚛</span>`;
+        statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-teal-950 text-teal-300 border border-teal-800">EN ROUTE</span>`;
         statusDesc = `Collector <strong>${activeReq.collector_name}</strong> is driving to your address.`;
       } else if (activeReq.status === "ARRIVED") {
-        statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-900 text-emerald-200 border border-emerald-700 animate-bounce">AT DOORSTEP 📍</span>`;
+        statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-800 animate-pulse">AT DOORSTEP</span>`;
         statusDesc = `Collector has arrived! Show your QR code for waste scale weighing.`;
       }
 
       tracker.innerHTML = `
-        <div class="p-3 bg-slate-900/90 rounded-xl border border-emerald-500/40 space-y-2">
+        <div class="p-3 bg-[#090d16] rounded-xl border border-emerald-500/30 space-y-2">
           <div class="flex items-center justify-between">
             <span class="text-[10px] font-mono text-emerald-400 font-bold">${activeReq.request_code}</span>
             ${statusBadge}
@@ -613,27 +620,27 @@ function setupCitizenPickupListener(userUid, citizenId) {
             <span class="text-[11px] text-slate-400 font-normal">${activeReq.urgency}</span>
           </div>
           <p class="text-[11px] text-slate-300">${statusDesc}</p>
-          <div class="text-[11px] text-slate-300 flex items-center justify-between pt-1 border-t border-slate-800">
+          <div class="text-[11px] text-slate-400 flex items-center justify-between pt-1 border-t border-white/[0.08]">
             <span><strong>Collector:</strong> ${activeReq.collector_name || 'Ward 4 Team'}</span>
-            <button onclick="cancelPickupRequest('${activeReq.id}')" class="text-red-400 hover:text-red-300 font-bold text-[10px] underline">Cancel Call</button>
+            <button onclick="cancelPickupRequest('${activeReq.id}')" class="text-red-400 hover:text-red-300 font-medium text-[10px] transition">Cancel Call</button>
           </div>
         </div>
       `;
     } else if (recentCompleted) {
       tracker.classList.remove("hidden");
       tracker.innerHTML = `
-        <div class="p-3 bg-emerald-950/60 rounded-xl border border-emerald-500 space-y-2">
+        <div class="p-3 bg-emerald-950/40 rounded-xl border border-emerald-500/40 space-y-2">
           <div class="flex items-center justify-between">
             <span class="text-[10px] font-mono text-emerald-400 font-bold">${recentCompleted.request_code}</span>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-900 text-emerald-200 border border-emerald-700">COMPLETED ✅</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-700">COMPLETED</span>
           </div>
-          <div class="text-xs font-bold text-slate-100">
-            🎉 Collected ${recentCompleted.actual_weight_kg || recentCompleted.estimated_weight_kg} kg ${recentCompleted.waste_category}!
+          <div class="text-xs font-semibold text-slate-100">
+            Collected ${recentCompleted.actual_weight_kg || recentCompleted.estimated_weight_kg} kg ${recentCompleted.waste_category}
           </div>
-          <div class="text-xs text-emerald-300 font-bold">
-            +${recentCompleted.credits_awarded || 0} EcoCredits added to your wallet.
+          <div class="text-xs text-emerald-300 font-mono font-semibold">
+            +${recentCompleted.credits_awarded || 0} EcoCredits added to wallet
           </div>
-          <button onclick="document.getElementById('citizenActivePickupTracker').classList.add('hidden')" class="w-full py-1 bg-emerald-800/80 hover:bg-emerald-700 text-emerald-100 rounded-lg text-[11px] font-bold transition">
+          <button onclick="document.getElementById('citizenActivePickupTracker').classList.add('hidden')" class="w-full py-1 bg-emerald-800/80 hover:bg-emerald-700 text-emerald-100 rounded-lg text-[11px] font-medium transition">
             Dismiss
           </button>
         </div>
@@ -698,10 +705,10 @@ function openCallCollectorModal() {
       </div>
     `,
     showCancelButton: true,
-    confirmButtonText: '🚀 Confirm & Dispatch Collector',
+    confirmButtonText: 'Confirm & Dispatch Collector',
     confirmButtonColor: '#059669',
     cancelButtonColor: '#334155',
-    background: '#1e293b',
+    background: '#0f172a',
     color: '#f8fafc',
     preConfirm: async () => {
       const cat = document.getElementById("swalPickupCategory").value;
@@ -729,7 +736,7 @@ function openCallCollectorModal() {
     if (result.isConfirmed && result.value) {
       Swal.fire({
         icon: 'success',
-        title: 'Waste Collector Alerted! 🚛',
+        title: 'Waste Collector Alerted',
         html: `
           <div class="text-xs text-left space-y-1.5 mt-2">
             <p><strong>Tracking Code:</strong> <span class="font-mono text-emerald-400">${result.value.request_code}</span></p>
@@ -807,7 +814,7 @@ function renderCitizenPenalties(penalties) {
         <div class="flex gap-3">
           <div class="relative w-24 h-24 rounded-xl overflow-hidden bg-slate-900 border border-slate-700 flex-shrink-0 cursor-pointer" onclick="viewEvidenceImage('${p.evidence_image_url || '/static/images/evidence/road_dumping.jpg'}', '${p.evidence_caption || ''}')">
             <img src="${p.evidence_image_url || '/static/images/evidence/road_dumping.jpg'}" class="w-full h-full object-cover hover:scale-105 transition" />
-            <div class="absolute bottom-0 inset-x-0 bg-black/70 text-[9px] text-center py-0.5 text-slate-200">🔍 Evidence</div>
+            <div class="absolute bottom-0 inset-x-0 bg-black/80 text-[8px] font-mono tracking-wider text-center py-0.5 text-slate-300 uppercase">Snapshot</div>
           </div>
           <div class="flex-1 space-y-1">
             <div class="text-sm font-bold text-slate-100">${p.violation_type}</div>
@@ -1016,12 +1023,12 @@ async function loadRewardsCatalog() {
 
           <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between">
             <span class="text-[11px] text-emerald-300 font-semibold">${r.value_label}</span>
-            <button onclick="redeemRewardVoucher('${r.id || r.reward_code}')" class="py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+            <button onclick="redeemRewardVoucher('${r.id || r.reward_code}')" class="py-1.5 px-3 rounded-xl text-xs font-semibold transition flex items-center gap-1 ${
               canAfford
-                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-md shadow-emerald-700/20 cursor-pointer'
-                : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700/60'
+                ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm cursor-pointer'
+                : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-white/[0.06]'
             }" ${!canAfford ? 'disabled' : ''}>
-              ${canAfford ? '🎁 Redeem Voucher' : 'Need more credits'}
+              ${canAfford ? 'Redeem Voucher' : 'Need more credits'}
             </button>
           </div>
         </div>
@@ -1045,7 +1052,7 @@ async function redeemRewardVoucher(rewardId) {
     showCancelButton: true,
     confirmButtonText: 'Confirm & Generate Code',
     confirmButtonColor: '#059669',
-    background: '#1e293b',
+    background: '#0f172a',
     color: '#f8fafc'
   }).then(async (res) => {
     if (res.isConfirmed) {
@@ -1053,7 +1060,7 @@ async function redeemRewardVoucher(rewardId) {
         const result = await FirestoreService.redeemReward(user, rewardId);
         Swal.fire({
           icon: 'success',
-          title: 'Voucher Code Generated! 🎉',
+          title: 'Voucher Code Generated',
           html: `
             <div class="text-xs text-left space-y-2 mt-2">
               <p>Your unique digital voucher code:</p>
@@ -1159,7 +1166,7 @@ function setupCollectorQueueListener() {
           <td class="py-3 px-3">
             <div class="font-bold text-slate-200">${p.citizen_name}</div>
             <div class="text-[11px] text-slate-300">${p.address}</div>
-            <div class="text-[10px] text-slate-400 font-mono">📞 ${p.phone}</div>
+            <div class="text-[10px] text-slate-400 font-mono">Tel: ${p.phone}</div>
           </td>
           <td class="py-3 px-3">
             <span class="font-semibold text-slate-200">${p.waste_category}</span>
@@ -1346,7 +1353,7 @@ function renderCollectorCitizenSelector() {
       </div>
       <div class="text-right flex-shrink-0">
         <span class="text-xs font-bold text-emerald-400 font-mono">${(c.eco_credits || 0).toFixed(1)} cr</span>
-        <div class="text-[9px] text-slate-400 font-medium">🔒 Protected</div>
+        <div class="text-[9px] text-slate-400 font-medium">Verified</div>
       </div>
     </button>
   `).join("");
@@ -1358,7 +1365,7 @@ function selectCitizenForCollection(citizenId, name, ward, credits) {
   if (card) {
     card.classList.remove("hidden");
     document.getElementById("scannedCitizenName").innerText = name || "Citizen";
-    document.getElementById("scannedCitizenId").innerText = `${citizenId} • 🔒 Credentials Protected`;
+    document.getElementById("scannedCitizenId").innerText = `${citizenId} • Verified Account`;
     document.getElementById("scannedCitizenWard").innerText = ward || "Ward 4";
     document.getElementById("scannedCitizenBalance").innerText = `${(credits || 0).toFixed(1)} EcoCredits`;
   }
@@ -1440,12 +1447,12 @@ async function submitWasteCollection() {
   // 3. Instant feedback popup (<50ms!)
   Swal.fire({
     icon: 'success',
-    title: 'Waste Handover Recorded! 🎉',
+    title: 'Waste Handover Recorded',
     html: `
-      <div class="text-xs text-left space-y-1.5 mt-2">
+      <div class="text-xs text-left space-y-1.5 mt-2 font-sans">
         <p><strong>Citizen:</strong> ${citizenName} (${citizenCode})</p>
         <p><strong>Measured Weight:</strong> ${weight} kg (${wasteType})</p>
-        <p><strong>EcoCredits Awarded:</strong> <span class="text-emerald-400 font-extrabold text-sm">+${estCredits} Credits</span></p>
+        <p><strong>EcoCredits Awarded:</strong> <span class="text-emerald-400 font-extrabold font-mono text-sm">+${estCredits} Credits</span></p>
         <p class="text-emerald-300 font-semibold mt-2">✓ Handover completed. Credits credited instantly to resident wallet.</p>
       </div>
     `,
@@ -1713,13 +1720,13 @@ async function runAIDetectionSimulation() {
 
     Swal.fire({
       icon: 'success',
-      title: 'AI Violation Captured! 📸',
+      title: 'AI Optical Violation Recorded',
       html: `
-        <div class="text-xs text-left space-y-2 mt-2">
-          <p><strong>Violation Code:</strong> <span class="font-mono text-amber-400">${result.violation_code}</span></p>
+        <div class="text-xs text-left space-y-2 mt-2 font-sans">
+          <p><strong>Violation Code:</strong> <span class="font-mono text-amber-400 font-bold">${result.violation_code}</span></p>
           <p><strong>Camera Unit:</strong> ${result.penalty.camera_code} (${result.penalty.camera_name})</p>
           <p><strong>Offense:</strong> <span class="text-red-400 font-bold">${result.penalty.violation_type}</span></p>
-          <p><strong>Statutory Fine Allotted:</strong> <span class="text-emerald-400 font-bold">₹${result.penalty.fine_amount}</span></p>
+          <p><strong>Statutory Fine Allotted:</strong> <span class="text-emerald-400 font-mono font-bold">₹${result.penalty.fine_amount}</span></p>
           <p class="text-slate-300">Evidence frame recorded and SMS penalty summons dispatched to resident.</p>
         </div>
       `,
@@ -1846,7 +1853,7 @@ function dispatchWarningNoticeModal(penaltyId) {
 // ============================================================
 function openUnifiedAuthModal() {
   Swal.fire({
-    title: '<span class="text-lg font-bold text-slate-100 flex items-center justify-center gap-2">🔐 Firebase Authentication</span>',
+    title: '<span class="text-base font-bold text-slate-100 flex items-center justify-center gap-2">Firebase Authentication</span>',
     html: `
       <div class="text-left text-xs mt-2 space-y-4">
         <!-- Auth Provider Tabs -->
@@ -1909,7 +1916,7 @@ function openUnifiedAuthModal() {
             </div>
 
             <button type="button" onclick="handleSendPhoneOTP()" id="btnSendOTP" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold transition">
-              📲 Send Verification SMS Code
+              Send Verification Code
             </button>
           </div>
 
@@ -2026,8 +2033,8 @@ window.handleSendPhoneOTP = async () => {
     document.getElementById("phoneStep2").classList.remove("hidden");
   } catch (err) {
     btn.disabled = false;
-    btn.innerText = "📲 Send Verification SMS Code";
-    Swal.fire({ icon: 'error', title: 'SMS Dispatch Failed', text: err.message, background: '#1e293b', color: '#f8fafc' });
+    btn.innerText = "Send Verification Code";
+    Swal.fire({ icon: 'error', title: 'SMS Dispatch Failed', text: err.message, background: '#0f172a', color: '#f8fafc' });
   }
 };
 
@@ -2085,16 +2092,16 @@ function openCommunityReportModal() {
 
         <div>
           <label class="block text-slate-300 font-semibold mb-1">Select Major Problem Category</label>
-          <select id="swalCommCategory" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-200 text-xs font-semibold focus:border-purple-500 focus:outline-none">
-            <option value="Lens Damaged / Physical Glass Crack">📷 Camera Lens Damaged / Physical Glass Crack</option>
-            <option value="Camera Lens Obstructed by Trees / Signboards">🌳 Camera Lens Obstructed by Trees / Signboard</option>
-            <option value="Illegal Garbage Pileup Hotspot">🚯 Chronic Garbage Littering Hotspot Under Camera</option>
-            <option value="Camera Offline / Solar Power Fault">⚡ Camera Offline / Solar Battery Depleted</option>
-            <option value="IR Night Vision Sensor Fault">🌙 IR Night Vision Sensor Optical Failure</option>
-            <option value="Camera Vandalism / Misaligned Angle">🛠️ Camera Vandalism / Misaligned Angle</option>
-            <option value="Open Drain / Hazardous Waste Spill">🚰 Open Drain Overflow / Chemical Waste Spill</option>
-            <option value="Damaged Municipal Community Dustbin">🗑️ Broken / Missing Municipal Community Dustbin</option>
-            <option value="Other Civic Issue">📌 Other Civic Issue</option>
+          <select id="swalCommCategory" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-200 text-xs font-semibold focus:border-emerald-500 focus:outline-none">
+            <option value="Lens Damaged / Physical Glass Crack">Camera Lens Damaged / Physical Glass Crack</option>
+            <option value="Camera Lens Obstructed by Trees / Signboards">Camera Lens Obstructed by Trees / Signboard</option>
+            <option value="Illegal Garbage Pileup Hotspot">Chronic Garbage Littering Hotspot Under Camera</option>
+            <option value="Camera Offline / Solar Power Fault">Camera Offline / Solar Battery Depleted</option>
+            <option value="IR Night Vision Sensor Fault">IR Night Vision Sensor Optical Failure</option>
+            <option value="Camera Vandalism / Misaligned Angle">Camera Vandalism / Misaligned Angle</option>
+            <option value="Open Drain / Hazardous Waste Spill">Open Drain Overflow / Chemical Waste Spill</option>
+            <option value="Damaged Municipal Community Dustbin">Broken / Missing Municipal Community Dustbin</option>
+            <option value="Other Civic Issue">Other Civic Issue</option>
           </select>
         </div>
 
@@ -2133,10 +2140,10 @@ function openCommunityReportModal() {
       </div>
     `,
     showCancelButton: true,
-    confirmButtonText: '🚀 Submit Municipal Ticket',
-    confirmButtonColor: '#9333ea',
+    confirmButtonText: 'Submit Municipal Ticket',
+    confirmButtonColor: '#059669',
     cancelButtonColor: '#334155',
-    background: '#1e293b',
+    background: '#0f172a',
     color: '#f8fafc',
     preConfirm: async () => {
       const category = document.getElementById("swalCommCategory").value;
@@ -2171,9 +2178,9 @@ function openCommunityReportModal() {
       const ticket = result.value.ticket;
       Swal.fire({
         icon: 'success',
-        title: 'Municipal Ticket Registered! 📋',
+        title: 'Municipal Ticket Registered',
         html: `
-          <div class="text-xs text-left space-y-1.5 mt-2">
+          <div class="text-xs text-left space-y-1.5 mt-2 font-sans">
             <p><strong>Statutory Ticket ID:</strong> <span class="font-mono text-purple-400 font-bold">${ticket.ticket_code}</span></p>
             <p><strong>Issue Category:</strong> ${ticket.issue_category}</p>
             <p><strong>Location:</strong> ${ticket.location_landmark} (${ticket.ward})</p>
@@ -2182,9 +2189,9 @@ function openCommunityReportModal() {
             <p class="text-slate-300 mt-2">Thank you for reporting. Municipal crews will inspect and update the ticket.</p>
           </div>
         `,
-        background: '#1e293b',
+        background: '#0f172a',
         color: '#f8fafc',
-        confirmButtonColor: '#9333ea'
+        confirmButtonColor: '#059669'
       });
     }
   });

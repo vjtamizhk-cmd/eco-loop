@@ -20,8 +20,8 @@ function initCCTVMap(cameras = []) {
     attributionControl: false
   }).setView([defaultLat, defaultLng], 13);
 
-  // Clean modern map tiles
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  // Tactical dark ops map tiles
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     maxZoom: 19,
     subdomains: 'abcd'
   }).addTo(cctvMap);
@@ -40,46 +40,46 @@ function renderCameraMarkers(cameras) {
 
   cameras.forEach(cam => {
     let color = '#10b981'; // Green (operational)
-    let statusBadge = '<span class="px-2 py-0.5 text-xs rounded bg-emerald-900 text-emerald-300 font-semibold">OPERATIONAL</span>';
+    let statusBadge = '<span class="px-2 py-0.5 text-xs rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-semibold font-mono">OPERATIONAL</span>';
     
     if (cam.status === 'damaged') {
       color = '#ef4444'; // Red
-      statusBadge = '<span class="px-2 py-0.5 text-xs rounded bg-red-900 text-red-300 font-semibold animate-pulse">DAMAGED</span>';
+      statusBadge = '<span class="px-2 py-0.5 text-xs rounded bg-red-950 text-red-300 border border-red-800 font-semibold font-mono">DAMAGED</span>';
     } else if (cam.status === 'obstructed' || cam.status === 'offline') {
       color = '#f59e0b'; // Amber
-      statusBadge = '<span class="px-2 py-0.5 text-xs rounded bg-amber-900 text-amber-300 font-semibold">OBSTRUCTED</span>';
+      statusBadge = '<span class="px-2 py-0.5 text-xs rounded bg-amber-950 text-amber-300 border border-amber-800 font-semibold font-mono">OBSTRUCTED</span>';
     }
 
-    // Custom SVG Camera Marker
+    // Custom SVG Camera Marker with glowing ring
     const customIcon = L.divIcon({
       className: 'custom-cctv-marker',
       html: `
-        <div style="background-color: ${color}; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px ${color}; border: 2px solid white;">
-          <svg style="width: 16px; height: 16px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div style="background-color: ${color}; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 14px ${color}88; border: 2px solid #ffffff;">
+          <svg style="width: 15px; height: 15px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
           </svg>
         </div>
       `,
-      iconSize: [32, 32],
-      iconAnchor: [16, 16],
-      popupAnchor: [0, -16]
+      iconSize: [30, 30],
+      iconAnchor: [15, 15],
+      popupAnchor: [0, -15]
     });
 
     const marker = L.marker([cam.latitude, cam.longitude], { icon: customIcon }).addTo(cctvMap);
 
     const popupContent = `
-      <div style="font-family: 'Plus Jakarta Sans', sans-serif; min-width: 220px; color: #0f172a; padding: 4px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-          <strong style="font-size: 13px;">${cam.camera_code}</strong>
+      <div style="font-family: 'Plus Jakarta Sans', system-ui, sans-serif; min-width: 220px; color: #f8fafc; padding: 4px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+          <strong style="font-size: 13px; font-family: 'JetBrains Mono', monospace; color: #34d399;">${cam.camera_code}</strong>
           ${statusBadge}
         </div>
-        <div style="font-size: 11px; color: #475569; margin-bottom: 3px;"><strong>Name:</strong> ${cam.name}</div>
-        <div style="font-size: 11px; color: #475569; margin-bottom: 3px;"><strong>Ward:</strong> ${cam.ward}</div>
-        <div style="font-size: 11px; color: #475569; margin-bottom: 6px;"><strong>Location:</strong> ${cam.location_desc || ''}</div>
-        ${cam.fault_description ? `<div style="font-size: 11px; background: #fee2e2; color: #991b1b; padding: 4px 6px; border-radius: 4px; margin-bottom: 6px;"><strong>Issue:</strong> ${cam.fault_description}</div>` : ''}
-        <div style="display: flex; gap: 6px; margin-top: 6px;">
-          <button onclick="window.openCameraDetails('${cam.camera_code}')" style="flex: 1; padding: 4px 8px; font-size: 10px; background: #059669; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Report Issue</button>
-          ${cam.status === 'operational' ? `<button onclick="window.triggerSimulateForCamera('${cam.camera_code}')" style="flex: 1; padding: 4px 8px; font-size: 10px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Simulate AI</button>` : ''}
+        <div style="font-size: 12px; color: #cbd5e1; margin-bottom: 4px;"><strong>Name:</strong> ${cam.name}</div>
+        <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;"><strong>Ward:</strong> ${cam.ward}</div>
+        <div style="font-size: 11px; color: #94a3b8; margin-bottom: 6px;"><strong>Location:</strong> ${cam.location_desc || ''}</div>
+        ${cam.fault_description ? `<div style="font-size: 11px; background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); padding: 5px 8px; border-radius: 6px; margin-bottom: 8px;"><strong>Issue:</strong> ${cam.fault_description}</div>` : ''}
+        <div style="display: flex; gap: 6px; margin-top: 8px;">
+          <button onclick="window.openCameraDetails('${cam.camera_code}')" style="flex: 1; padding: 6px 10px; font-size: 11px; background: #059669; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 700;">Report Issue</button>
+          ${cam.status === 'operational' ? `<button onclick="window.triggerSimulateForCamera('${cam.camera_code}')" style="flex: 1; padding: 6px 10px; font-size: 11px; background: #b91c1c; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 700;">Simulate AI</button>` : ''}
         </div>
       </div>
     `;

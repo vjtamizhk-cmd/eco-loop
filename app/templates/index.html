@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Eco Loop - Smart Waste Management & AI Surveillance Network</title>
+  <title>Eco Loop - Municipal Waste Credits & AI Surveillance Platform</title>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -13,25 +13,37 @@
       theme: {
         extend: {
           colors: {
+            obsidian: {
+              950: '#070b12',
+              900: '#0b101b',
+              850: '#101726',
+              800: '#162035',
+              700: '#1c2842',
+            },
             brand: {
               50: '#ecfdf5',
               100: '#d1fae5',
+              400: '#34d399',
               500: '#10b981',
               600: '#059669',
               700: '#047857',
               800: '#065f46',
               900: '#064e3b',
             }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace']
           }
         }
       }
     }
   </script>
 
-  <!-- Google Fonts -->
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -47,7 +59,6 @@
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <!-- SweetAlert2 -->
-  <!-- SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <!-- Firebase SDKs (v10 Compat) -->
@@ -55,71 +66,81 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-  <!-- Custom CSS -->
+  <!-- Custom Design System Stylesheet -->
   <link rel="stylesheet" href="/static/css/styles.css">
 </head>
-<body class="bg-slate-950 text-slate-100 antialiased selection:bg-emerald-500 selection:text-white">
+<body class="bg-[#070b12] text-slate-100 antialiased selection:bg-emerald-500/30 selection:text-white">
 
   <!-- Invisible reCAPTCHA container for Phone Auth -->
   <div id="recaptcha-container"></div>
 
-  <!-- Top Navigation Bar -->
-  <header class="sticky top-0 z-40 bg-slate-900/80 backdrop-blur-md border-b border-slate-800">
+  <!-- Top Executive Navigation Bar -->
+  <header class="sticky top-0 z-40 bg-[#0b101b]/85 backdrop-blur-xl border-b border-white/[0.08]">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
       
       <!-- Brand Logo -->
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-          <i data-lucide="recycle" class="w-6 h-6 text-white"></i>
+      <div class="flex items-center gap-3 cursor-pointer" onclick="switchRole('citizen')">
+        <div class="w-10 h-10 rounded-xl bg-[#101726] border border-emerald-500/40 flex items-center justify-center shadow-lg shadow-emerald-950/50">
+          <i data-lucide="recycle" class="w-5 h-5 text-emerald-400"></i>
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <span class="text-lg font-extrabold tracking-tight bg-gradient-to-r from-emerald-400 to-teal-200 bg-clip-text text-transparent">ECO LOOP</span>
-            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 font-mono border border-emerald-800/80 font-bold">FIREBASE AI</span>
+            <span class="text-base font-extrabold tracking-tight text-white font-sans">ECO LOOP</span>
+            <span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-300 font-mono border border-emerald-700/60 font-semibold tracking-wide">MUNICIPAL AI</span>
           </div>
-          <p class="text-[11px] text-slate-400 hidden sm:block">Municipal Waste Credits & CCTV Penalty Network</p>
+          <p class="text-[11px] text-slate-400 hidden sm:block">Smart Waste Credits & CCTV Surveillance</p>
         </div>
       </div>
 
-      <!-- Role Mode Display (Strict RBAC) -->
-      <div id="currentRoleHeaderBadge" class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 shadow-inner">
-        <span id="roleHeaderIcon" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span id="roleHeaderText" class="text-xs font-bold text-slate-200 uppercase tracking-wider">Citizen Portal</span>
+      <!-- Center: Role Segmented Control (Fast 1-Click Role Switcher) -->
+      <div class="hidden md:flex items-center role-segmented-nav" id="roleSegmentedNav">
+        <button type="button" class="role-segmented-btn is-active" data-role="citizen" onclick="switchRole('citizen')">
+          <i data-lucide="user" class="w-3.5 h-3.5"></i>
+          <span>Citizen</span>
+        </button>
+        <button type="button" class="role-segmented-btn" data-role="collector" onclick="switchRole('collector')">
+          <i data-lucide="truck" class="w-3.5 h-3.5"></i>
+          <span>Collector</span>
+        </button>
+        <button type="button" class="role-segmented-btn" data-role="admin" onclick="switchRole('admin')">
+          <i data-lucide="shield" class="w-3.5 h-3.5"></i>
+          <span>Administrator</span>
+        </button>
       </div>
 
       <!-- Right User Controls -->
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-3">
         <!-- Unified Firebase Auth Button -->
-        <button id="btnUnifiedAuth" onclick="openUnifiedAuthModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-lg text-xs font-bold shadow-lg shadow-emerald-700/30 transition">
+        <button id="btnUnifiedAuth" onclick="openUnifiedAuthModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-emerald-950/50 transition">
           <i data-lucide="log-in" class="w-3.5 h-3.5"></i>
-          <span id="btnAuthText">Sign In / Sign Up</span>
+          <span id="btnAuthText">Sign In / Register</span>
         </button>
 
-        <!-- Active User Profile & 1-Click Role Switcher -->
+        <!-- Active User Profile Dropdown -->
         <div class="relative">
-          <button onclick="toggleUserDropdown()" class="flex items-center gap-2 p-1.5 bg-slate-800/80 hover:bg-slate-800 rounded-xl border border-slate-700/80 transition">
-            <img id="headerUserAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150" class="w-7 h-7 rounded-full object-cover border border-emerald-500/50" />
+          <button onclick="toggleUserDropdown()" class="flex items-center gap-2 p-1.5 bg-[#101726] hover:bg-[#162035] rounded-xl border border-white/[0.08] transition">
+            <img id="headerUserAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150" class="w-7 h-7 rounded-full object-cover border border-emerald-500/40" />
             <div class="text-left hidden lg:block pr-1">
-              <div id="headerUserName" class="text-xs font-bold text-slate-200 leading-tight">Johnathan Doe</div>
-              <div class="flex items-center gap-1.5">
-                <span id="headerUserRoleBadge" class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 font-bold uppercase">CITIZEN</span>
-                <span id="headerUserEmail" class="text-[10px] text-slate-400 font-mono truncate max-w-[110px]">john.citizen@gmail.com</span>
+              <div id="headerUserName" class="text-xs font-semibold text-slate-100 leading-tight">Johnathan Doe</div>
+              <div class="flex items-center gap-1.5 mt-0.5">
+                <span id="headerUserRoleBadge" class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 font-mono font-bold uppercase">CITIZEN</span>
+                <span id="headerUserEmail" class="text-[10px] text-slate-400 font-mono truncate max-w-[110px]">ECO-CTZ-1001</span>
               </div>
             </div>
             <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
           </button>
 
           <!-- Switcher Dropdown Menu -->
-          <div id="userDropdownMenu" class="hidden absolute right-0 mt-2 w-72 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 p-2 space-y-1">
+          <div id="userDropdownMenu" class="hidden absolute right-0 mt-2 w-72 bg-[#0e1526] border border-white/[0.12] rounded-2xl shadow-2xl z-50 p-2.5 space-y-1">
             <div class="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-              <span>Switch Persona / Role</span>
-              <button onclick="checkAndSeedFirestore(true).then(()=>{loadDashboardForCurrentRole(); Swal.fire({icon:'success', title:'Firestore Reset & Seeded', timer:1500, background:'#1e293b', color:'#fff'});})" class="text-emerald-400 hover:text-emerald-300 font-normal text-[9px] underline">Reset Demo Data</button>
+              <span>Switch Persona</span>
+              <button onclick="checkAndSeedFirestore(true).then(()=>{loadDashboardForCurrentRole(); Swal.fire({icon:'success', title:'Demo Data Reset', timer:1500, background:'#0f172a', color:'#fff'});})" class="text-emerald-400 hover:text-emerald-300 font-medium text-[10px] transition">Reset Demo</button>
             </div>
             <div id="userSwitcherOptions" class="space-y-1">
               <!-- Dynamically populated -->
             </div>
-            <div class="pt-2 border-t border-slate-700">
-              <button onclick="handleSignOut()" class="w-full py-1.5 px-3 bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/80 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+            <div class="pt-2 border-t border-white/[0.08]">
+              <button onclick="handleSignOut()" class="w-full py-1.5 px-3 bg-red-950/40 hover:bg-red-950/70 text-red-300 border border-red-800/50 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition">
                 <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Sign Out
               </button>
             </div>
@@ -130,6 +151,7 @@
     </div>
   </header>
 
+  <!-- Mobile Section Tab Bar (Visible on phones) -->
   <nav id="mobileSectionNav" class="mobile-section-nav" aria-label="Dashboard sections">
     <button type="button" class="mobile-section-tab is-active" data-mobile-section="overview" onclick="showMobileSection('overview')">
       <i data-lucide="layout-dashboard" class="w-4 h-4"></i><span>Overview</span>
@@ -153,136 +175,162 @@
       <!-- Citizen Top Metric Cards -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mobile-section-block" data-mobile-section="overview">
         <!-- EcoCredits Balance -->
-        <div class="glass-card rounded-2xl p-4 border border-emerald-500/30 relative overflow-hidden bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900">
-          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+        <div class="glass-card rounded-2xl p-5 border border-emerald-500/25 relative overflow-hidden bg-[#101726]/80">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-1">
             <span>EcoCredits Balance</span>
-            <i data-lucide="coins" class="w-4 h-4 text-emerald-400"></i>
+            <div class="w-7 h-7 rounded-lg bg-emerald-950/60 border border-emerald-800/50 flex items-center justify-center">
+              <i data-lucide="coins" class="w-3.5 h-3.5 text-emerald-400"></i>
+            </div>
           </div>
-          <div class="flex items-baseline gap-1.5">
+          <div class="flex items-baseline gap-1.5 mt-1">
             <span id="citizenCreditsBalance" class="text-2xl lg:text-3xl font-extrabold text-emerald-400 font-mono">0.0</span>
-            <span class="text-xs text-emerald-500/80 font-bold">Credits</span>
+            <span class="text-xs text-emerald-400/80 font-mono font-medium">Credits</span>
           </div>
-          <div class="mt-2 flex items-center gap-1.5 text-[11px] text-slate-300">
-          </div>
+          <div class="mt-2 text-[11px] text-slate-400 font-medium">Earned through waste handovers</div>
         </div>
 
         <!-- Waste Recycled -->
-        <div class="glass-card rounded-2xl p-4 border border-slate-800">
-          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+        <div class="glass-card rounded-2xl p-5 border border-white/[0.08] bg-[#101726]/80">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-1">
             <span>Total Recycled</span>
-            <i data-lucide="scale" class="w-4 h-4 text-teal-400"></i>
+            <div class="w-7 h-7 rounded-lg bg-teal-950/60 border border-teal-800/50 flex items-center justify-center">
+              <i data-lucide="scale" class="w-3.5 h-3.5 text-teal-400"></i>
+            </div>
           </div>
-          <div id="citizenTotalWasteKg" class="text-2xl lg:text-3xl font-extrabold text-slate-100 font-mono">0 kg</div>
-          <div class="mt-2 text-[11px] text-teal-400 font-semibold flex items-center gap-1">
+          <div id="citizenTotalWasteKg" class="text-2xl lg:text-3xl font-extrabold text-slate-100 font-mono mt-1">0 kg</div>
+          <div class="mt-2 text-[11px] text-teal-400 font-medium flex items-center gap-1">
             <i data-lucide="trending-up" class="w-3 h-3"></i> Segregated collections
           </div>
         </div>
 
         <!-- Carbon Offset -->
-        <div class="glass-card rounded-2xl p-4 border border-slate-800">
-          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+        <div class="glass-card rounded-2xl p-5 border border-white/[0.08] bg-[#101726]/80">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-1">
             <span>CO₂ Reduced</span>
-            <i data-lucide="leaf" class="w-4 h-4 text-emerald-400"></i>
+            <div class="w-7 h-7 rounded-lg bg-emerald-950/60 border border-emerald-800/50 flex items-center justify-center">
+              <i data-lucide="leaf" class="w-3.5 h-3.5 text-emerald-400"></i>
+            </div>
           </div>
-          <div id="citizenCo2Offset" class="text-2xl lg:text-3xl font-extrabold text-slate-100 font-mono">0 kg CO₂</div>
-          <div class="mt-2 text-[11px] text-slate-400">Diverted from city landfills</div>
+          <div id="citizenCo2Offset" class="text-2xl lg:text-3xl font-extrabold text-slate-100 font-mono mt-1">0 kg CO₂</div>
+          <div class="mt-2 text-[11px] text-slate-400 font-medium">Diverted from city landfills</div>
         </div>
 
         <!-- Outstanding Penalties -->
-        <div class="glass-card rounded-2xl p-4 border border-slate-800">
-          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+        <div class="glass-card rounded-2xl p-5 border border-white/[0.08] bg-[#101726]/80">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-1">
             <span>Outstanding Fines</span>
-            <i data-lucide="alert-octagon" class="w-4 h-4 text-amber-400"></i>
+            <div class="w-7 h-7 rounded-lg bg-amber-950/60 border border-amber-800/50 flex items-center justify-center">
+              <i data-lucide="alert-octagon" class="w-3.5 h-3.5 text-amber-400"></i>
+            </div>
           </div>
-          <div id="citizenUnpaidFines" class="text-2xl lg:text-3xl font-extrabold text-amber-400 font-mono">₹0</div>
-          <div id="citizenUnpaidCount" class="mt-2 text-[11px] text-amber-300 font-semibold">0 active violations</div>
+          <div id="citizenUnpaidFines" class="text-2xl lg:text-3xl font-extrabold text-amber-400 font-mono mt-1">₹0</div>
+          <div id="citizenUnpaidCount" class="mt-2 text-[11px] text-amber-400/90 font-medium">0 active violations</div>
         </div>
       </div>
 
-      <div data-credit-calculator class="glass-card rounded-2xl p-4 border border-emerald-500/30 bg-emerald-950/20 flex flex-col sm:flex-row sm:items-end gap-3 mobile-section-block" data-mobile-section="overview">
-        <div class="flex-1">
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Credit to Rupee Calculator</label>
-          <input data-credit-input type="number" min="0" step="0.1" value="0" oninput="updateCreditCalculators()" placeholder="Enter credits" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-mono text-emerald-400 focus:outline-none focus:border-emerald-500" />
+      <!-- Credit Calculator Toolbar -->
+      <div data-credit-calculator class="glass-card rounded-2xl p-4 border border-emerald-500/25 bg-[#0e1726]/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mobile-section-block" data-mobile-section="overview">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-emerald-950/80 border border-emerald-700/60 flex items-center justify-center">
+            <i data-lucide="calculator" class="w-4 h-4 text-emerald-400"></i>
+          </div>
+          <div>
+            <div class="text-xs font-semibold text-slate-200">EcoCredit Value Calculator</div>
+            <div class="text-[11px] text-slate-400">Convert credits directly to municipal voucher value</div>
+          </div>
         </div>
-        <div class="sm:text-right">
-          <div class="text-[10px] text-slate-400 uppercase tracking-wider">Equivalent value</div>
-          <div data-credit-output class="text-2xl font-extrabold text-emerald-400 font-mono">₹0.00</div>
-          <div data-credit-rate class="text-[10px] text-slate-400">1 credit = ₹0.15</div>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-slate-400">Credits:</label>
+            <input data-credit-input type="number" min="0" step="0.1" value="0" oninput="updateCreditCalculators()" placeholder="0" class="w-24 bg-[#090d16] border border-white/[0.12] rounded-xl px-2.5 py-1.5 text-xs font-mono text-emerald-400 focus:outline-none focus:border-emerald-500" />
+          </div>
+          <div class="h-6 w-px bg-white/[0.08]"></div>
+          <div class="text-right">
+            <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Equivalent</span>
+            <span data-credit-output class="text-base font-extrabold text-emerald-400 font-mono">₹0.00</span>
+          </div>
+          <span data-credit-rate class="text-[10px] text-slate-500 font-mono">(1 cr = ₹0.15)</span>
         </div>
       </div>
 
-      <!-- Main Citizen Layout: QR Pass Card + Littering Penalties Hub -->
+      <!-- Main Citizen Layout: Digital Eco-Pass Card + Penalties Hub -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mobile-section-block" data-mobile-section="actions">
 
-        <!-- LEFT: Dynamic QR Eco-Pass Digital Card (5 Cols) -->
+        <!-- LEFT: Executive Municipal Eco-Pass Digital Card (5 Cols) -->
         <div class="lg:col-span-5 space-y-4">
-          <div id="printableEcoPass" class="eco-pass-card rounded-3xl p-6 text-white shadow-2xl border border-emerald-400/30 relative">
+          <div id="printableEcoPass" class="eco-pass-card rounded-3xl p-6 text-white shadow-2xl relative">
             
-            <!-- Pass Header -->
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-lg bg-white/20 backdrop-blur flex items-center justify-center">
-                  <i data-lucide="qr-code" class="w-5 h-5 text-white"></i>
+            <!-- Pass Top Metadata -->
+            <div class="flex items-center justify-between mb-4 relative z-10">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center">
+                  <i data-lucide="shield-check" class="w-4 h-4 text-emerald-300"></i>
                 </div>
                 <div>
                   <div class="text-xs font-extrabold tracking-wider uppercase text-emerald-200">MUNICIPAL ECO-PASS</div>
-                  <div class="text-[10px] text-emerald-100/70">Doorstep Waste Collection ID</div>
+                  <div class="text-[10px] text-emerald-200/70 font-mono">SMART CITY OF CHENNAI</div>
                 </div>
               </div>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-400/20 text-emerald-200 border border-emerald-300/30">
-                VERIFIED ● ACTIVE
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> VERIFIED
               </span>
             </div>
 
+            <!-- Smart Chip & Contactless Indicator -->
+            <div class="flex items-center justify-between my-2 relative z-10">
+              <div class="smart-chip"></div>
+              <i data-lucide="wifi" class="w-4 h-4 text-emerald-300/60 rotate-90"></i>
+            </div>
+
             <!-- QR Code Center Display -->
-            <div class="bg-white rounded-2xl p-4 shadow-inner flex flex-col items-center justify-center my-3">
-              <img id="passQrImage" src="" alt="Citizen QR Code" class="w-44 h-44 object-contain" />
-              <div class="text-center mt-2">
-                <span class="text-[11px] font-bold font-mono text-slate-800" id="passCitizenId">ECO-CTZ-1001</span>
-                <p class="text-[9px] text-slate-500">Scan via collector mobile unit to log trash handover</p>
+            <div class="qr-enclosure p-4 my-3 text-center relative z-10">
+              <img id="passQrImage" src="" alt="Citizen QR Code" class="w-40 h-40 object-contain mx-auto" />
+              <div class="mt-2.5">
+                <span class="text-xs font-bold font-mono text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-300" id="passCitizenId">ECO-CTZ-1001</span>
+                <p class="text-[9px] text-slate-500 mt-1">Scan via collector mobile unit to log trash handover</p>
               </div>
             </div>
 
             <!-- Citizen Details on Pass -->
-            <div class="space-y-1.5 text-xs text-emerald-50 mt-4 pt-3 border-t border-emerald-500/40">
+            <div class="space-y-1.5 text-xs text-slate-200 mt-4 pt-3 border-t border-emerald-500/30 font-sans relative z-10">
               <div class="flex justify-between">
-                <span class="text-emerald-200">Citizen Name:</span>
+                <span class="text-emerald-300/80">Resident:</span>
                 <span id="passCitizenName" class="font-bold text-white">Johnathan Doe</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-emerald-200">Municipal Ward:</span>
+                <span class="text-emerald-300/80">Ward:</span>
                 <span id="passCitizenWard" class="font-medium text-white">Ward 4 - Green Meadows</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-emerald-200">Google Account:</span>
-                <span id="passCitizenEmail" class="font-mono text-[11px] text-emerald-200">john.citizen@gmail.com</span>
+                <span class="text-emerald-300/80">Digital Account:</span>
+                <span id="passCitizenEmail" class="font-mono text-[11px] text-emerald-200">ECO-CTZ-1001</span>
               </div>
             </div>
 
             <!-- Card Actions -->
-            <div class="flex items-center gap-2 mt-5">
-              <button onclick="downloadEcoPassImage()" class="flex-1 py-2 px-3 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 backdrop-blur">
+            <div class="flex items-center gap-2 mt-5 relative z-10">
+              <button onclick="downloadEcoPassImage()" class="flex-1 py-2 px-3 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 border border-white/20">
                 <i data-lucide="download" class="w-3.5 h-3.5"></i> Download QR
               </button>
-              <button onclick="printEcoPass()" class="flex-1 py-2 px-3 bg-emerald-950/60 hover:bg-emerald-950 text-emerald-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border border-emerald-400/30">
-                <i data-lucide="printer" class="w-3.5 h-3.5"></i> Print Badge
+              <button onclick="printEcoPass()" class="flex-1 py-2 px-3 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-200 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 border border-emerald-500/40">
+                <i data-lucide="printer" class="w-3.5 h-3.5"></i> Print Official Badge
               </button>
             </div>
           </div>
 
           <!-- Call Doorstep Waste Collector Action Card -->
-          <div class="glass-card rounded-2xl p-4 border border-emerald-500/40 bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900 space-y-3">
+          <div class="glass-card rounded-2xl p-5 border border-emerald-500/30 bg-[#101726]/80 space-y-3">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
-                <i data-lucide="phone-call" class="w-4 h-4 text-emerald-400"></i> On-Demand Service
+              <span class="text-xs font-semibold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                <i data-lucide="phone-call" class="w-3.5 h-3.5 text-emerald-400"></i> On-Demand Service
               </span>
-              <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-900/80 text-emerald-200 border border-emerald-700 font-semibold font-mono">DOORSTEP PICKUP</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-700 font-semibold font-mono">DOORSTEP PICKUP</span>
             </div>
             
-            <p class="text-xs text-slate-300">Have segregated waste ready at home? Call the municipal waste collector to your doorstep and earn instant EcoCredits!</p>
+            <p class="text-xs text-slate-300 leading-relaxed">Have segregated waste ready at your residence? Dispatch the municipal waste collector directly to your doorstep and earn instant EcoCredits.</p>
 
-            <button onclick="openCallCollectorModal()" class="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-700/30 transition flex items-center justify-center gap-2">
-              <i data-lucide="truck" class="w-4 h-4"></i> 📞 Call Waste Collector Now
+            <button onclick="openCallCollectorModal()" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-emerald-950/50 transition flex items-center justify-center gap-2">
+              <i data-lucide="truck" class="w-4 h-4"></i> Call Waste Collector Now
             </button>
 
             <!-- Active Pickup Live Status Tracker -->
@@ -291,18 +339,18 @@
             </div>
           </div>
 
-          <!-- Community Issue Reporting Card -->
-          <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3 bg-gradient-to-br from-purple-950/30 via-slate-900 to-slate-900">
+          <!-- Community Civic Issue Reporting Card -->
+          <div class="glass-card rounded-2xl p-5 border border-white/[0.08] space-y-3 bg-[#101726]/80">
             <div class="flex items-center justify-between">
-              <h4 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i> Civic Issue & CCTV Reporting Tool
+              <h4 class="text-xs font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-400"></i> Civic Issue & CCTV Report
               </h4>
-              <span class="text-[9px] px-1.5 py-0.5 rounded bg-purple-900/60 text-purple-300 font-bold border border-purple-800 font-mono">MUNICIPAL DESK</span>
+              <span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-medium font-mono border border-slate-700">MUNICIPAL DESK</span>
             </div>
-            <p class="text-xs text-slate-300">Notice a damaged CCTV lens, obstructed camera angle, or chronic street litter hotspot? File a geotagged citizen report directly to the ward engineer.</p>
-            <button onclick="openCommunityReportModal()" class="w-full py-2.5 px-3 bg-purple-700 hover:bg-purple-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-between shadow-lg shadow-purple-900/30">
-              <span class="flex items-center gap-2"><i data-lucide="flag" class="w-4 h-4 text-purple-200"></i> File Civic / CCTV Maintenance Report</span>
-              <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-purple-200"></i>
+            <p class="text-xs text-slate-400 leading-relaxed">Notice a damaged CCTV lens, obstructed camera view, or chronic street litter hotspot? File a geotagged citizen report to the ward engineer.</p>
+            <button onclick="openCommunityReportModal()" class="w-full py-2.5 px-3 bg-[#162035] hover:bg-[#1c2842] text-slate-200 rounded-xl text-xs font-semibold border border-white/[0.1] transition flex items-center justify-between">
+              <span class="flex items-center gap-2"><i data-lucide="flag" class="w-3.5 h-3.5 text-emerald-400"></i> File Civic / CCTV Maintenance Report</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-slate-400"></i>
             </button>
           </div>
         </div>
@@ -311,12 +359,14 @@
         <div class="lg:col-span-7 space-y-4">
           <div class="flex items-center justify-between">
             <div>
-              <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
-                <i data-lucide="video" class="w-5 h-5 text-red-400"></i> CCTV Littering Penalty Tracking
+              <h3 class="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                <i data-lucide="video" class="w-4 h-4 text-red-400"></i> CCTV Littering Penalty Tracking
               </h3>
-              <p class="text-xs text-slate-400">Surveillance cameras automatically allot penalties for illegal road or public littering.</p>
+              <p class="text-xs text-slate-400">Surveillance cameras automatically allot statutory penalties for illegal road or public littering.</p>
             </div>
-            <span class="text-xs font-mono text-slate-400">Live AI Feed</span>
+            <span class="text-[11px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Live AI Feed
+            </span>
           </div>
 
           <!-- Penalty Cards Grid -->
@@ -328,15 +378,15 @@
       </div>
 
       <!-- EcoCredits Reward Store Marketplace -->
-      <div class="glass-card rounded-2xl p-6 border border-slate-800 space-y-4 mobile-section-block" data-mobile-section="activity">
+      <div class="glass-card rounded-2xl p-6 border border-white/[0.08] space-y-4 mobile-section-block bg-[#101726]/80" data-mobile-section="activity">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
-              <i data-lucide="gift" class="w-5 h-5 text-emerald-400"></i> EcoRewards Marketplace
+            <h3 class="text-sm font-semibold text-slate-100 flex items-center gap-2">
+              <i data-lucide="gift" class="w-4 h-4 text-emerald-400"></i> EcoRewards Marketplace
             </h3>
-            <p class="text-xs text-slate-400">Spend accumulated waste credits on municipal tax waivers, transit passes, and vouchers.</p>
+            <p class="text-xs text-slate-400">Redeem accumulated waste credits for municipal tax waivers, transit passes, and merchant vouchers.</p>
           </div>
-          <div class="flex items-center gap-1.5 px-3 py-1 bg-emerald-950/80 rounded-lg border border-emerald-800 text-xs text-emerald-300 font-bold">
+          <div class="flex items-center gap-1.5 px-3 py-1 bg-emerald-950/80 rounded-xl border border-emerald-800 text-xs text-emerald-300 font-medium">
             <i data-lucide="wallet" class="w-3.5 h-3.5"></i> Redeem with EcoCredits
           </div>
         </div>
@@ -346,8 +396,8 @@
         </div>
 
         <!-- User's Redeemed Vouchers -->
-        <div class="pt-4 border-t border-slate-800/80">
-          <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">My Active Redeemed Vouchers</h4>
+        <div class="pt-4 border-t border-white/[0.08]">
+          <h4 class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 font-mono">My Active Redeemed Vouchers</h4>
           <div id="citizenRedemptionsList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <!-- Dynamically rendered -->
           </div>
@@ -355,11 +405,11 @@
       </div>
 
       <!-- Waste Handover Collection History Table -->
-      <div class="glass-card rounded-2xl p-6 border border-slate-800 space-y-4 mobile-section-block" data-mobile-section="activity">
+      <div class="glass-card rounded-2xl p-6 border border-white/[0.08] space-y-4 mobile-section-block bg-[#101726]/80" data-mobile-section="activity">
         <div class="flex items-center justify-between">
           <div>
-            <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
-              <i data-lucide="history" class="w-5 h-5 text-teal-400"></i> Doorstep Waste Handover Ledger
+            <h3 class="text-sm font-semibold text-slate-100 flex items-center gap-2">
+              <i data-lucide="history" class="w-4 h-4 text-teal-400"></i> Doorstep Waste Handover Ledger
             </h3>
             <p class="text-xs text-slate-400">History of segregated waste handed over to municipal collectors with credit breakdown.</p>
           </div>
@@ -368,7 +418,7 @@
         <div class="overflow-x-auto">
           <table class="w-full text-left">
             <thead>
-              <tr class="text-slate-400 border-b border-slate-800 text-xs uppercase font-bold">
+              <tr class="text-slate-400 border-b border-white/[0.08] text-xs uppercase font-mono font-semibold">
                 <th class="py-2.5 px-3">Collection Code</th>
                 <th class="py-2.5 px-3">Waste Category</th>
                 <th class="py-2.5 px-3">Weight</th>
@@ -376,7 +426,7 @@
                 <th class="py-2.5 px-3 text-right">Credits Earned</th>
               </tr>
             </thead>
-            <tbody id="citizenCollectionsTableBody" class="divide-y divide-slate-800/60">
+            <tbody id="citizenCollectionsTableBody" class="divide-y divide-white/[0.04]">
               <!-- Dynamically rendered -->
             </tbody>
           </table>
@@ -392,52 +442,73 @@
 
       <!-- Collector KPIs -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mobile-section-block" data-mobile-section="overview">
-        <div class="glass-card rounded-2xl p-4 border border-amber-500/30 bg-gradient-to-br from-amber-950/40 via-slate-900 to-slate-900">
-          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+        <div class="glass-card rounded-2xl p-5 border border-amber-500/25 bg-[#101726]/80">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-1">
             <span>Today's Waste Collected</span>
-            <i data-lucide="scale" class="w-4 h-4 text-amber-400"></i>
+            <div class="w-7 h-7 rounded-lg bg-amber-950/60 border border-amber-800/50 flex items-center justify-center">
+              <i data-lucide="scale" class="w-3.5 h-3.5 text-amber-400"></i>
+            </div>
           </div>
-          <div id="collectorTodayKg" class="text-2xl lg:text-3xl font-extrabold text-amber-400 font-mono">0 kg</div>
-          <div class="mt-2 text-[11px] text-slate-300">Ward 4 field route</div>
+          <div id="collectorTodayKg" class="text-2xl lg:text-3xl font-extrabold text-amber-400 font-mono mt-1">0 kg</div>
+          <div class="mt-2 text-[11px] text-slate-400">Ward 4 field route</div>
         </div>
 
-        <div class="glass-card rounded-2xl p-4 border border-slate-800">
-          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+        <div class="glass-card rounded-2xl p-5 border border-white/[0.08] bg-[#101726]/80">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-1">
             <span>Credits Awarded Today</span>
-            <i data-lucide="coins" class="w-4 h-4 text-emerald-400"></i>
+            <div class="w-7 h-7 rounded-lg bg-emerald-950/60 border border-emerald-800/50 flex items-center justify-center">
+              <i data-lucide="coins" class="w-3.5 h-3.5 text-emerald-400"></i>
+            </div>
           </div>
-          <div id="collectorTodayCredits" class="text-2xl lg:text-3xl font-extrabold text-slate-100 font-mono">0</div>
-          <div class="mt-2 text-[11px] text-emerald-400 font-semibold">Credited instantly to citizens</div>
+          <div id="collectorTodayCredits" class="text-2xl lg:text-3xl font-extrabold text-slate-100 font-mono mt-1">0</div>
+          <div class="mt-2 text-[11px] text-emerald-400 font-medium">Credited instantly to citizens</div>
         </div>
 
-        <div class="glass-card rounded-2xl p-4 border border-slate-800">
-          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+        <div class="glass-card rounded-2xl p-5 border border-white/[0.08] bg-[#101726]/80">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-1">
             <span>Citizens Served Today</span>
-            <i data-lucide="users" class="w-4 h-4 text-teal-400"></i>
+            <div class="w-7 h-7 rounded-lg bg-teal-950/60 border border-teal-800/50 flex items-center justify-center">
+              <i data-lucide="users" class="w-3.5 h-3.5 text-teal-400"></i>
+            </div>
           </div>
-          <div id="collectorTodayCount" class="text-2xl lg:text-3xl font-extrabold text-slate-100 font-mono">0</div>
+          <div id="collectorTodayCount" class="text-2xl lg:text-3xl font-extrabold text-slate-100 font-mono mt-1">0</div>
           <div class="mt-2 text-[11px] text-slate-400">Doorstep pickups</div>
         </div>
 
-        <div class="glass-card rounded-2xl p-4 border border-slate-800">
-          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+        <div class="glass-card rounded-2xl p-5 border border-white/[0.08] bg-[#101726]/80">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-1">
             <span>All-Time Pickups</span>
-            <i data-lucide="award" class="w-4 h-4 text-purple-400"></i>
+            <div class="w-7 h-7 rounded-lg bg-purple-950/60 border border-purple-800/50 flex items-center justify-center">
+              <i data-lucide="award" class="w-3.5 h-3.5 text-purple-400"></i>
+            </div>
           </div>
-          <div id="collectorAllTimeKg" class="text-2xl lg:text-3xl font-extrabold text-slate-100 font-mono">0 kg</div>
+          <div id="collectorAllTimeKg" class="text-2xl lg:text-3xl font-extrabold text-slate-100 font-mono mt-1">0 kg</div>
           <div class="mt-2 text-[11px] text-slate-400">Collector badge certified</div>
         </div>
       </div>
 
-      <div data-credit-calculator class="glass-card rounded-2xl p-4 border border-amber-500/30 bg-amber-950/20 flex flex-col sm:flex-row sm:items-end gap-3 mobile-section-block" data-mobile-section="overview">
-        <div class="flex-1">
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Credit to Rupee Calculator</label>
-          <input data-credit-input type="number" min="0" step="0.1" value="0" oninput="updateCreditCalculators()" placeholder="Enter credits" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-mono text-amber-400 focus:outline-none focus:border-amber-500" />
+      <!-- Credit Calculator -->
+      <div data-credit-calculator class="glass-card rounded-2xl p-4 border border-amber-500/25 bg-[#0e1726]/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mobile-section-block" data-mobile-section="overview">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-amber-950/80 border border-amber-700/60 flex items-center justify-center">
+            <i data-lucide="calculator" class="w-4 h-4 text-amber-400"></i>
+          </div>
+          <div>
+            <div class="text-xs font-semibold text-slate-200">Collector Rate Conversion</div>
+            <div class="text-[11px] text-slate-400">Quickly estimate citizen compensation value</div>
+          </div>
         </div>
-        <div class="sm:text-right">
-          <div class="text-[10px] text-slate-400 uppercase tracking-wider">Equivalent value</div>
-          <div data-credit-output class="text-2xl font-extrabold text-amber-400 font-mono">₹0.00</div>
-          <div data-credit-rate class="text-[10px] text-slate-400">1 credit = ₹0.15</div>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-slate-400">Credits:</label>
+            <input data-credit-input type="number" min="0" step="0.1" value="0" oninput="updateCreditCalculators()" placeholder="0" class="w-24 bg-[#090d16] border border-white/[0.12] rounded-xl px-2.5 py-1.5 text-xs font-mono text-amber-400 focus:outline-none focus:border-amber-500" />
+          </div>
+          <div class="h-6 w-px bg-white/[0.08]"></div>
+          <div class="text-right">
+            <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Equivalent</span>
+            <span data-credit-output class="text-base font-extrabold text-amber-400 font-mono">₹0.00</span>
+          </div>
+          <span data-credit-rate class="text-[10px] text-slate-500 font-mono">(1 cr = ₹0.15)</span>
         </div>
       </div>
 
@@ -446,18 +517,18 @@
 
         <!-- LEFT: Scanner & Citizen Identification (6 Cols) -->
         <div class="lg:col-span-6 space-y-4">
-          <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-4">
+          <div class="glass-card rounded-2xl p-5 border border-white/[0.08] space-y-4 bg-[#101726]/80">
             <div class="flex items-center justify-between">
-              <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
-                <i data-lucide="scan" class="w-5 h-5 text-amber-400"></i> Scan Citizen Eco-Pass QR
+              <h3 class="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                <i data-lucide="scan" class="w-4 h-4 text-amber-400"></i> Scan Citizen Eco-Pass QR
               </h3>
-              <button id="btnToggleScanner" onclick="startQRScanner(handleCitizenQRScanned)" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5">
-                📷 Start Camera QR Scanner
+              <button id="btnToggleScanner" onclick="startQRScanner(handleCitizenQRScanned)" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
+                <i data-lucide="camera" class="w-3.5 h-3.5"></i> Launch Optical Scanner
               </button>
             </div>
 
             <!-- Camera Video Feed Container -->
-            <div id="qrReaderContainer" class="hidden viewfinder-box bg-black rounded-xl p-2 relative">
+            <div id="qrReaderContainer" class="hidden viewfinder-box rounded-xl p-2 relative">
               <div id="qrReader" class="w-full"></div>
               <div class="viewfinder-scanline"></div>
             </div>
@@ -466,18 +537,18 @@
             <div>
               <label class="block text-xs font-semibold text-slate-300 mb-1">Enter Citizen ID or Scanned QR Token</label>
               <div class="flex gap-2">
-                <input type="text" id="collectorCitizenInput" placeholder="e.g. ECO-CTZ-1001 or paste QR string..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-amber-500" />
-                <button onclick="handleIdentifyCitizenClick()" class="px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white rounded-xl text-xs font-bold shadow transition">
+                <input type="text" id="collectorCitizenInput" placeholder="e.g. ECO-CTZ-1001 or paste QR string..." class="flex-1 bg-[#090d16] border border-white/[0.12] rounded-xl px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-amber-500" />
+                <button onclick="handleIdentifyCitizenClick()" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-semibold shadow transition">
                   Identify
                 </button>
               </div>
             </div>
 
-            <!-- Quick Select Citizen List (For Instant Waste Credit Transfer) -->
+            <!-- Quick Select Citizen List -->
             <div class="pt-2">
               <div class="flex items-center justify-between">
-                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Active Ward Residents (Send Credits)</span>
-                <span class="text-[9px] text-emerald-400 font-semibold font-mono">🔒 Email & Account Protected</span>
+                <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider font-mono">Active Ward Residents</span>
+                <span class="text-[9px] text-emerald-400 font-semibold font-mono">Protected Account</span>
               </div>
               <div id="quickCitizenSelector" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
                 <!-- Dynamically populated with citizens -->
@@ -490,14 +561,14 @@
                 <div class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
                   <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i> Verified Resident Target
                 </div>
-                <div id="scannedCitizenName" class="text-sm font-bold text-slate-100">Resident Citizen</div>
+                <div id="scannedCitizenName" class="text-sm font-semibold text-slate-100 mt-0.5">Resident Citizen</div>
                 <div class="text-xs text-emerald-300 font-mono" id="scannedCitizenId">ECO-CTZ-1001</div>
                 <div class="text-xs text-slate-400" id="scannedCitizenWard">Ward 4 - Green Meadows</div>
               </div>
               <div class="text-right">
                 <div class="text-[10px] text-slate-400">Current Balance</div>
                 <div id="scannedCitizenBalance" class="text-base font-extrabold text-emerald-400 font-mono">0.0 EcoCredits</div>
-                <div class="text-[9px] text-slate-400 mt-0.5">🔒 Account Protected</div>
+                <div class="text-[9px] text-slate-500 mt-0.5">Account Protected</div>
               </div>
             </div>
 
@@ -506,10 +577,10 @@
 
         <!-- RIGHT: Waste Logging & Credit Calculator Form (6 Cols) -->
         <div class="lg:col-span-6 space-y-4">
-          <div class="glass-card rounded-2xl p-6 border border-slate-800 space-y-4">
+          <div class="glass-card rounded-2xl p-6 border border-white/[0.08] space-y-4 bg-[#101726]/80">
             <div>
-              <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
-                <i data-lucide="package-check" class="w-5 h-5 text-emerald-400"></i> Weigh Waste & Award Credits
+              <h3 class="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                <i data-lucide="package-check" class="w-4 h-4 text-emerald-400"></i> Weigh Waste & Award Credits
               </h3>
               <p class="text-xs text-slate-400">Select segregated category, input scale weight, and transfer EcoCredits instantly.</p>
             </div>
@@ -517,7 +588,7 @@
             <!-- Waste Category Dropdown -->
             <div>
               <label class="block text-xs font-semibold text-slate-300 mb-1">Waste Category & Municipal Reward Rate</label>
-              <select id="collectorWasteTypeSelect" onchange="updateCollectionCreditPreview()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-200 font-semibold focus:outline-none focus:border-emerald-500">
+              <select id="collectorWasteTypeSelect" onchange="updateCollectionCreditPreview()" class="w-full bg-[#090d16] border border-white/[0.12] rounded-xl px-3 py-2.5 text-xs text-slate-200 font-medium focus:outline-none focus:border-emerald-500">
                 <!-- Dynamically loaded from rates -->
               </select>
             </div>
@@ -526,18 +597,18 @@
             <div>
               <label class="block text-xs font-semibold text-slate-300 mb-1">Measured Scale Weight (in Kilograms)</label>
               <div class="relative">
-                <input type="number" id="collectorWeightInput" step="0.1" min="0.1" placeholder="e.g. 5.5" oninput="updateCollectionCreditPreview()" class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-3 pr-12 py-2.5 text-base font-bold font-mono text-emerald-400 focus:outline-none focus:border-emerald-500" />
-                <span class="absolute right-3 top-2.5 text-xs text-slate-400 font-bold">KG</span>
+                <input type="number" id="collectorWeightInput" step="0.1" min="0.1" placeholder="e.g. 5.5" oninput="updateCollectionCreditPreview()" class="w-full bg-[#090d16] border border-white/[0.12] rounded-xl pl-3 pr-12 py-2.5 text-base font-bold font-mono text-emerald-400 focus:outline-none focus:border-emerald-500" />
+                <span class="absolute right-3 top-2.5 text-xs text-slate-400 font-bold font-mono">KG</span>
               </div>
             </div>
 
             <!-- Instant Credits Calculation Display -->
-            <div class="p-4 rounded-xl bg-gradient-to-r from-emerald-950/80 to-teal-950/80 border border-emerald-700/60 flex items-center justify-between">
+            <div class="p-4 rounded-xl bg-[#0e1726] border border-emerald-500/30 flex items-center justify-between">
               <div>
-                <span class="text-[11px] text-emerald-300 font-bold uppercase tracking-wider">Reward Credits to Allot</span>
+                <span class="text-[11px] text-emerald-400 font-semibold uppercase tracking-wider font-mono">Reward Credits to Allot</span>
                 <p class="text-xs text-slate-400">Calculated based on weight × rate/kg</p>
               </div>
-              <div id="collectorCreditsPreview" class="text-2xl font-extrabold text-emerald-300 font-mono">
+              <div id="collectorCreditsPreview" class="text-2xl font-extrabold text-emerald-400 font-mono">
                 0.0 Credits
               </div>
             </div>
@@ -545,11 +616,11 @@
             <!-- Optional Collector Notes -->
             <div>
               <label class="block text-xs font-semibold text-slate-300 mb-1">Collector Field Notes (Optional)</label>
-              <input type="text" id="collectorNotesInput" placeholder="e.g. Clean segregated HDPE plastic bottles" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-slate-600" />
+              <input type="text" id="collectorNotesInput" placeholder="e.g. Clean segregated HDPE plastic bottles" class="w-full bg-[#090d16] border border-white/[0.12] rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500" />
             </div>
 
             <!-- Submit Button -->
-            <button onclick="submitWasteCollection()" class="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2">
+            <button onclick="submitWasteCollection()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-emerald-950/50 transition flex items-center justify-center gap-2">
               <i data-lucide="check-circle" class="w-4 h-4"></i> Confirm Handover & Transfer Credits
             </button>
           </div>
@@ -558,21 +629,21 @@
       </div>
 
       <!-- Collector's Incoming On-Demand Pickup Requests Queue -->
-      <div class="glass-card rounded-2xl p-6 border border-amber-500/40 bg-gradient-to-br from-amber-950/20 via-slate-900 to-slate-900 space-y-4 mobile-section-block" data-mobile-section="activity">
+      <div class="glass-card rounded-2xl p-6 border border-amber-500/30 bg-[#101726]/80 space-y-4 mobile-section-block" data-mobile-section="activity">
         <div class="flex items-center justify-between">
           <div>
-            <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
-              <i data-lucide="bell-ring" class="w-5 h-5 text-amber-400 animate-bounce"></i> Citizen On-Demand Pickup Calls (Ward Queue)
+            <h3 class="text-sm font-semibold text-slate-100 flex items-center gap-2">
+              <i data-lucide="bell-ring" class="w-4 h-4 text-amber-400"></i> Citizen On-Demand Pickup Calls (Ward Queue)
             </h3>
-            <p class="text-xs text-slate-400">Live doorstep requests called in by residents. Click 'Accept & Weigh' to load citizen directly into the weighing scale.</p>
+            <p class="text-xs text-slate-400">Live doorstep requests called in by residents. Click 'Accept & Weigh' to load citizen directly into the scale.</p>
           </div>
-          <span class="text-xs px-2.5 py-1 rounded bg-amber-950 text-amber-300 border border-amber-800 font-mono font-bold">LIVE DISPATCH</span>
+          <span class="text-xs px-2.5 py-1 rounded bg-amber-950 text-amber-300 border border-amber-800 font-mono font-semibold">LIVE DISPATCH</span>
         </div>
 
         <div class="overflow-x-auto">
           <table class="w-full text-left">
             <thead>
-              <tr class="text-slate-400 border-b border-slate-800 text-xs uppercase font-bold">
+              <tr class="text-slate-400 border-b border-white/[0.08] text-xs uppercase font-mono font-semibold">
                 <th class="py-2.5 px-3">Request Code</th>
                 <th class="py-2.5 px-3">Citizen & Address</th>
                 <th class="py-2.5 px-3">Waste Category</th>
@@ -582,7 +653,7 @@
                 <th class="py-2.5 px-3 text-right">Action</th>
               </tr>
             </thead>
-            <tbody id="collectorPickupRequestsBody" class="divide-y divide-slate-800/60">
+            <tbody id="collectorPickupRequestsBody" class="divide-y divide-white/[0.04]">
               <!-- Dynamically populated -->
             </tbody>
           </table>
@@ -590,15 +661,15 @@
       </div>
 
       <!-- Collector's Daily Activity Log Table -->
-      <div class="glass-card rounded-2xl p-6 border border-slate-800 space-y-4 mobile-section-block" data-mobile-section="activity">
-        <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
-          <i data-lucide="clipboard-list" class="w-5 h-5 text-amber-400"></i> My Today's Collection Activity
+      <div class="glass-card rounded-2xl p-6 border border-white/[0.08] space-y-4 mobile-section-block bg-[#101726]/80" data-mobile-section="activity">
+        <h3 class="text-sm font-semibold text-slate-100 flex items-center gap-2">
+          <i data-lucide="clipboard-list" class="w-4 h-4 text-amber-400"></i> My Today's Collection Activity
         </h3>
 
         <div class="overflow-x-auto">
           <table class="w-full text-left">
             <thead>
-              <tr class="text-slate-400 border-b border-slate-800 text-xs uppercase font-bold">
+              <tr class="text-slate-400 border-b border-white/[0.08] text-xs uppercase font-mono font-semibold">
                 <th class="py-2.5 px-3">Collection ID</th>
                 <th class="py-2.5 px-3">Citizen</th>
                 <th class="py-2.5 px-3">Category</th>
@@ -606,7 +677,7 @@
                 <th class="py-2.5 px-3 text-right">Credits Transferred</th>
               </tr>
             </thead>
-            <tbody id="collectorRecentLogsBody" class="divide-y divide-slate-800/60">
+            <tbody id="collectorRecentLogsBody" class="divide-y divide-white/[0.04]">
               <!-- Dynamically populated -->
             </tbody>
           </table>
@@ -623,55 +694,76 @@
       <!-- Admin Top Municipal KPI Cards -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mobile-section-block" data-mobile-section="overview">
         <!-- CCTV Network Health -->
-        <div class="glass-card rounded-2xl p-4 border border-purple-500/30 bg-gradient-to-br from-purple-950/40 via-slate-900 to-slate-900">
-          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
-            <span>CCTV Surveillance Health</span>
-            <i data-lucide="cctv" class="w-4 h-4 text-purple-400"></i>
+        <div class="glass-card rounded-2xl p-5 border border-purple-500/25 bg-[#101726]/80">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-1">
+            <span>CCTV Network Health</span>
+            <div class="w-7 h-7 rounded-lg bg-purple-950/60 border border-purple-800/50 flex items-center justify-center">
+              <i data-lucide="cctv" class="w-3.5 h-3.5 text-purple-400"></i>
+            </div>
           </div>
-          <div id="adminCamHealthPct" class="text-2xl lg:text-3xl font-extrabold text-purple-400 font-mono">100%</div>
-          <div id="adminDamagedCams" class="mt-2 text-[11px] text-red-400 font-semibold">0 Damaged / 0 Offline</div>
+          <div id="adminCamHealthPct" class="text-2xl lg:text-3xl font-extrabold text-purple-400 font-mono mt-1">100%</div>
+          <div id="adminDamagedCams" class="mt-2 text-[11px] text-red-400 font-medium">0 Damaged / 0 Offline</div>
         </div>
 
         <!-- Municipal Recycled Waste -->
-        <div class="glass-card rounded-2xl p-4 border border-slate-800">
-          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+        <div class="glass-card rounded-2xl p-5 border border-white/[0.08] bg-[#101726]/80">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-1">
             <span>Total Recycled Waste</span>
-            <i data-lucide="recycle" class="w-4 h-4 text-emerald-400"></i>
+            <div class="w-7 h-7 rounded-lg bg-emerald-950/60 border border-emerald-800/50 flex items-center justify-center">
+              <i data-lucide="recycle" class="w-3.5 h-3.5 text-emerald-400"></i>
+            </div>
           </div>
-          <div id="adminTotalWasteTons" class="text-2xl lg:text-3xl font-extrabold text-slate-100 font-mono">0 Tons</div>
-          <div class="mt-2 text-[11px] text-emerald-400">City-wide diversion rate: 76.4%</div>
+          <div id="adminTotalWasteTons" class="text-2xl lg:text-3xl font-extrabold text-slate-100 font-mono mt-1">0 Tons</div>
+          <div class="mt-2 text-[11px] text-emerald-400 font-medium">City-wide diversion rate: 76.4%</div>
         </div>
 
         <!-- Total Violations Logged -->
-        <div class="glass-card rounded-2xl p-4 border border-slate-800">
-          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+        <div class="glass-card rounded-2xl p-5 border border-white/[0.08] bg-[#101726]/80">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-1">
             <span>Littering Violations</span>
-            <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i>
+            <div class="w-7 h-7 rounded-lg bg-amber-950/60 border border-amber-800/50 flex items-center justify-center">
+              <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-400"></i>
+            </div>
           </div>
-          <div id="adminTotalViolations" class="text-2xl lg:text-3xl font-extrabold text-slate-100 font-mono">0</div>
-          <div id="adminOverdueDefaulters" class="mt-2 text-[11px] text-red-400 font-semibold">0 Overdue Defaulters</div>
+          <div id="adminTotalViolations" class="text-2xl lg:text-3xl font-extrabold text-slate-100 font-mono mt-1">0</div>
+          <div id="adminOverdueDefaulters" class="mt-2 text-[11px] text-red-400 font-medium">0 Overdue Defaulters</div>
         </div>
 
         <!-- Penalty Recovery Rate -->
-        <div class="glass-card rounded-2xl p-4 border border-slate-800">
-          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+        <div class="glass-card rounded-2xl p-5 border border-white/[0.08] bg-[#101726]/80">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-1">
             <span>Fine Recovery Rate</span>
-            <i data-lucide="check-circle" class="w-4 h-4 text-teal-400"></i>
+            <div class="w-7 h-7 rounded-lg bg-teal-950/60 border border-teal-800/50 flex items-center justify-center">
+              <i data-lucide="check-circle" class="w-3.5 h-3.5 text-teal-400"></i>
+            </div>
           </div>
-          <div id="adminRecoveryRate" class="text-2xl lg:text-3xl font-extrabold text-teal-400 font-mono">0%</div>
+          <div id="adminRecoveryRate" class="text-2xl lg:text-3xl font-extrabold text-teal-400 font-mono mt-1">0%</div>
           <div id="adminTotalDefaultFines" class="mt-2 text-[11px] text-slate-400 font-mono">Outstanding: ₹0</div>
         </div>
       </div>
 
-      <div data-credit-calculator class="glass-card rounded-2xl p-4 border border-purple-500/30 bg-purple-950/20 flex flex-col sm:flex-row sm:items-end gap-3 mobile-section-block" data-mobile-section="overview">
-        <div class="flex-1">
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Credit to Rupee Calculator</label>
-          <input data-credit-input type="number" min="0" step="0.1" value="0" oninput="updateCreditCalculators()" placeholder="Enter credits" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-mono text-purple-400 focus:outline-none focus:border-purple-500" />
+      <!-- Credit Calculator -->
+      <div data-credit-calculator class="glass-card rounded-2xl p-4 border border-purple-500/25 bg-[#0e1726]/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mobile-section-block" data-mobile-section="overview">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-purple-950/80 border border-purple-700/60 flex items-center justify-center">
+            <i data-lucide="calculator" class="w-4 h-4 text-purple-400"></i>
+          </div>
+          <div>
+            <div class="text-xs font-semibold text-slate-200">Municipal Budget Conversion</div>
+            <div class="text-[11px] text-slate-400">Calculate financial liability of outstanding credits</div>
+          </div>
         </div>
-        <div class="sm:text-right">
-          <div class="text-[10px] text-slate-400 uppercase tracking-wider">Equivalent value</div>
-          <div data-credit-output class="text-2xl font-extrabold text-purple-400 font-mono">₹0.00</div>
-          <div data-credit-rate class="text-[10px] text-slate-400">1 credit = ₹0.15</div>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-slate-400">Credits:</label>
+            <input data-credit-input type="number" min="0" step="0.1" value="0" oninput="updateCreditCalculators()" placeholder="0" class="w-24 bg-[#090d16] border border-white/[0.12] rounded-xl px-2.5 py-1.5 text-xs font-mono text-purple-400 focus:outline-none focus:border-purple-500" />
+          </div>
+          <div class="h-6 w-px bg-white/[0.08]"></div>
+          <div class="text-right">
+            <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Equivalent</span>
+            <span data-credit-output class="text-base font-extrabold text-purple-400 font-mono">₹0.00</span>
+          </div>
+          <span data-credit-rate class="text-[10px] text-slate-500 font-mono">(1 cr = ₹0.15)</span>
         </div>
       </div>
 
@@ -680,28 +772,28 @@
 
         <!-- Interactive Map & Camera Health Diagnostic (7 Cols) -->
         <div class="lg:col-span-7 space-y-4">
-          <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-4">
+          <div class="glass-card rounded-2xl p-5 border border-white/[0.08] space-y-4 bg-[#101726]/80">
             <div class="flex items-center justify-between">
               <div>
-                <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
-                  <i data-lucide="map" class="w-5 h-5 text-emerald-400"></i> Municipal CCTV Surveillance Map
+                <h3 class="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                  <i data-lucide="map" class="w-4 h-4 text-emerald-400"></i> Municipal CCTV Surveillance Map
                 </h3>
                 <p class="text-xs text-slate-400">Live surveillance grid for Chennai, Tamil Nadu. Click any camera pin to view health diagnostics.</p>
               </div>
               <div class="flex items-center gap-2 text-[11px]">
-                <span class="flex items-center gap-1 text-emerald-400 font-semibold"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Active</span>
-                <span class="flex items-center gap-1 text-red-400 font-semibold"><span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> Damaged</span>
-                <span class="flex items-center gap-1 text-amber-400 font-semibold"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Offline</span>
+                <span class="flex items-center gap-1 text-emerald-400 font-mono text-[10px] font-semibold"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Active</span>
+                <span class="flex items-center gap-1 text-red-400 font-mono text-[10px] font-semibold"><span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> Damaged</span>
+                <span class="flex items-center gap-1 text-amber-400 font-mono text-[10px] font-semibold"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Offline</span>
               </div>
             </div>
 
             <!-- Leaflet Map Container -->
-            <div id="cctvMapContainer" class="w-full h-72 rounded-xl overflow-hidden border border-slate-700/80 z-0"></div>
+            <div id="cctvMapContainer" class="w-full h-72 rounded-xl overflow-hidden border border-white/[0.08] z-0"></div>
 
             <!-- Camera Diagnostics Grid -->
             <div>
               <div class="flex items-center justify-between mb-3">
-                <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Surveillance Cameras Status (<span id="adminTotalCams">0</span> Units)</h4>
+                <h4 class="text-xs font-semibold text-slate-300 uppercase tracking-wider font-mono">Surveillance Units (<span id="adminTotalCams">0</span> Cameras)</h4>
               </div>
               <div id="adminCamerasGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <!-- Dynamically rendered -->
@@ -715,32 +807,32 @@
         <div class="lg:col-span-5 space-y-4">
 
           <!-- AI Littering Detection Simulator Card -->
-          <div id="aiSimulatorCard" class="glass-card rounded-2xl p-5 border border-red-500/30 bg-gradient-to-br from-red-950/20 via-slate-900 to-slate-900 space-y-3">
+          <div id="aiSimulatorCard" class="glass-card rounded-2xl p-5 border border-red-500/25 bg-[#101726]/80 space-y-3">
             <div class="flex items-center justify-between">
-              <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
-                <i data-lucide="sparkles" class="w-5 h-5 text-red-400"></i> AI Optical Detection Simulator
+              <h3 class="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                <i data-lucide="sparkles" class="w-4 h-4 text-red-400"></i> AI Optical Detection Simulator
               </h3>
-              <span class="text-[10px] px-2 py-0.5 rounded font-mono font-bold bg-red-950 text-red-300 border border-red-800">DEMO TOOL</span>
+              <span class="text-[10px] px-2 py-0.5 rounded font-mono font-semibold bg-red-950 text-red-300 border border-red-800">DEMO CONSOLE</span>
             </div>
-            <p class="text-xs text-slate-400">Simulate a real-time CCTV optical detection event. This automatically captures evidence and allots a statutory penalty to the citizen.</p>
+            <p class="text-xs text-slate-400">Simulate a real-time CCTV optical detection event. This captures evidence and allots a statutory penalty to the citizen.</p>
 
             <div>
               <label class="block text-xs font-semibold text-slate-300 mb-1">Select CCTV Surveillance Camera</label>
-              <select id="simCameraSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200">
+              <select id="simCameraSelect" class="w-full bg-[#090d16] border border-white/[0.12] rounded-xl px-3 py-2 text-xs text-slate-200">
                 <!-- Populated from operational cams -->
               </select>
             </div>
 
             <div>
               <label class="block text-xs font-semibold text-slate-300 mb-1">Select Citizen Suspect</label>
-              <select id="simUserSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200">
+              <select id="simUserSelect" class="w-full bg-[#090d16] border border-white/[0.12] rounded-xl px-3 py-2 text-xs text-slate-200">
                 <!-- Populated from registered citizens -->
               </select>
             </div>
 
             <div>
               <label class="block text-xs font-semibold text-slate-300 mb-1">Violation Category</label>
-              <select id="simViolationSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200">
+              <select id="simViolationSelect" class="w-full bg-[#090d16] border border-white/[0.12] rounded-xl px-3 py-2 text-xs text-slate-200">
                 <option value="Road Dumping">Road Dumping (₹750 Fine)</option>
                 <option value="Public Littering">Public Littering (₹500 Fine)</option>
                 <option value="Plastic Burning">Plastic Burning & Open Combustion (₹1,500 Fine)</option>
@@ -751,17 +843,17 @@
 
             <div>
               <label class="block text-xs font-semibold text-slate-300 mb-1">Simulation Notes / Frame Tag</label>
-              <input type="text" id="simNotesInput" value="Optical AI flagged domestic waste discard" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200" />
+              <input type="text" id="simNotesInput" value="Optical AI flagged domestic waste discard" class="w-full bg-[#090d16] border border-white/[0.12] rounded-xl px-3 py-2 text-xs text-slate-200" />
             </div>
 
-            <button onclick="runAIDetectionSimulation()" class="w-full py-2.5 bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-red-600/30 transition flex items-center justify-center gap-2">
+            <button onclick="runAIDetectionSimulation()" class="w-full py-2.5 bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-red-950/50 transition flex items-center justify-center gap-2">
               <i data-lucide="zap" class="w-4 h-4"></i> Trigger Live AI Detection & Issue Penalty
             </button>
           </div>
 
           <!-- Municipal Waste Composition Chart -->
-          <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-3">
-            <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2">
+          <div class="glass-card rounded-2xl p-5 border border-white/[0.08] space-y-3 bg-[#101726]/80">
+            <h3 class="text-xs font-semibold text-slate-200 uppercase tracking-wider font-mono flex items-center gap-2">
               <i data-lucide="pie-chart" class="w-4 h-4 text-emerald-400"></i> Waste Category Breakdown
             </h3>
             <div class="h-48 relative">
@@ -773,16 +865,16 @@
 
       </div>
 
-      <!-- PENALTY DEFAULTERS WATCHLIST & AREA LEDGER -->
-      <div class="glass-card rounded-2xl p-6 border border-slate-800 space-y-4 mobile-section-block" data-mobile-section="activity">
+      <!-- PENALTY DEFAULTERS WATCHLIST -->
+      <div class="glass-card rounded-2xl p-6 border border-white/[0.08] space-y-4 mobile-section-block bg-[#101726]/80" data-mobile-section="activity">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
-              <i data-lucide="alert-octagon" class="w-5 h-5 text-red-400"></i> Penalty Defaulters Watchlist
+            <h3 class="text-sm font-semibold text-slate-100 flex items-center gap-2">
+              <i data-lucide="alert-octagon" class="w-4 h-4 text-red-400"></i> Penalty Defaulters Watchlist
             </h3>
             <p class="text-xs text-slate-400">Citizens with delayed or overdue penalties. Dispatch legal notices and monitor default charges.</p>
           </div>
-          <span class="px-3 py-1 bg-red-950/80 border border-red-800 text-red-300 rounded-lg text-xs font-bold font-mono">
+          <span class="px-3 py-1 bg-red-950/80 border border-red-800 text-red-300 rounded-xl text-xs font-medium font-mono">
             Automated Late Fee Engine Active
           </span>
         </div>
@@ -790,16 +882,16 @@
         <div class="overflow-x-auto">
           <table class="w-full text-left">
             <thead>
-              <tr class="text-slate-400 border-b border-slate-800 text-xs uppercase font-bold">
+              <tr class="text-slate-400 border-b border-white/[0.08] text-xs uppercase font-mono font-semibold">
                 <th class="py-2.5 px-3">Violation Code</th>
                 <th class="py-2.5 px-3">Citizen Defaulter</th>
                 <th class="py-2.5 px-3">Offense</th>
                 <th class="py-2.5 px-3">Overdue Period</th>
-                <th class="py-2.5 px-3">Total Payable (Fine + Late)</th>
+                <th class="py-2.5 px-3">Total Payable</th>
                 <th class="py-2.5 px-3 text-right">Action</th>
               </tr>
             </thead>
-            <tbody id="adminDefaultersTableBody" class="divide-y divide-slate-800/60">
+            <tbody id="adminDefaultersTableBody" class="divide-y divide-white/[0.04]">
               <!-- Dynamically populated -->
             </tbody>
           </table>
@@ -807,20 +899,20 @@
       </div>
 
       <!-- CCTV MAINTENANCE & REPAIR TICKETS -->
-      <div class="glass-card rounded-2xl p-6 border border-slate-800 space-y-4 mobile-section-block" data-mobile-section="activity">
+      <div class="glass-card rounded-2xl p-6 border border-white/[0.08] space-y-4 mobile-section-block bg-[#101726]/80" data-mobile-section="activity">
         <div class="flex items-center justify-between">
           <div>
-            <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
-              <i data-lucide="wrench" class="w-5 h-5 text-amber-400"></i> Camera Maintenance & Repair Tickets
+            <h3 class="text-sm font-semibold text-slate-100 flex items-center gap-2">
+              <i data-lucide="wrench" class="w-4 h-4 text-amber-400"></i> Camera Maintenance & Repair Tickets
             </h3>
-            <p class="text-xs text-slate-400">Manage repair requests for damaged optical sensors, network loss, and physical lens breakage.</p>
+            <p class="text-xs text-slate-400">Manage repair requests for damaged optical sensors, network loss, and lens obstructions.</p>
           </div>
         </div>
 
         <div class="overflow-x-auto">
           <table class="w-full text-left">
             <thead>
-              <tr class="text-slate-400 border-b border-slate-800 text-xs uppercase font-bold">
+              <tr class="text-slate-400 border-b border-white/[0.08] text-xs uppercase font-mono font-semibold">
                 <th class="py-2.5 px-3">Ticket ID</th>
                 <th class="py-2.5 px-3">CCTV Camera</th>
                 <th class="py-2.5 px-3">Fault Category</th>
@@ -829,7 +921,7 @@
                 <th class="py-2.5 px-3 text-right">Technician Action</th>
               </tr>
             </thead>
-            <tbody id="adminTicketsTableBody" class="divide-y divide-slate-800/60">
+            <tbody id="adminTicketsTableBody" class="divide-y divide-white/[0.04]">
               <!-- Dynamically populated -->
             </tbody>
           </table>
@@ -837,11 +929,11 @@
       </div>
 
       <!-- ALL AREA PENALTIES LEDGER -->
-      <div class="glass-card rounded-2xl p-6 border border-slate-800 space-y-4 mobile-section-block" data-mobile-section="activity">
+      <div class="glass-card rounded-2xl p-6 border border-white/[0.08] space-y-4 mobile-section-block bg-[#101726]/80" data-mobile-section="activity">
         <div class="flex items-center justify-between">
           <div>
-            <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
-              <i data-lucide="file-text" class="w-5 h-5 text-slate-300"></i> All Municipal Violations Ledger
+            <h3 class="text-sm font-semibold text-slate-100 flex items-center gap-2">
+              <i data-lucide="file-text" class="w-4 h-4 text-slate-300"></i> All Municipal Violations Ledger
             </h3>
             <p class="text-xs text-slate-400">Complete audit trail of all optical and sensor detections.</p>
           </div>
@@ -850,7 +942,7 @@
         <div class="overflow-x-auto">
           <table class="w-full text-left">
             <thead>
-              <tr class="text-slate-400 border-b border-slate-800 text-xs uppercase font-bold">
+              <tr class="text-slate-400 border-b border-white/[0.08] text-xs uppercase font-mono font-semibold">
                 <th class="py-2.5 px-3">Violation Code</th>
                 <th class="py-2.5 px-3">Citizen</th>
                 <th class="py-2.5 px-3">Violation Type</th>
@@ -860,7 +952,7 @@
                 <th class="py-2.5 px-3 text-right">Evidence</th>
               </tr>
             </thead>
-            <tbody id="adminAllPenaltiesBody" class="divide-y divide-slate-800/60">
+            <tbody id="adminAllPenaltiesBody" class="divide-y divide-white/[0.04]">
               <!-- Dynamically populated -->
             </tbody>
           </table>
@@ -872,13 +964,13 @@
   </main>
 
   <!-- Footer -->
-  <footer class="border-t border-slate-900 bg-slate-950/80 py-8 text-center text-xs text-slate-500">
+  <footer class="border-t border-white/[0.06] bg-[#070b12] py-8 text-center text-xs text-slate-500">
     <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
       <div class="flex items-center gap-2">
         <i data-lucide="leaf" class="w-4 h-4 text-emerald-400"></i>
-        <span>Eco Loop Smart Waste Management & AI Surveillance Platform</span>
+        <span class="text-slate-400 font-medium">Eco Loop Smart Waste Management & AI Surveillance Platform</span>
       </div>
-      <p class="text-[11px]">Empowering clean cities with AI optical surveillance, dynamic QR passes, and citizen reward incentives.</p>
+      <p class="text-[11px] text-slate-500">Empowering clean cities with optical surveillance, dynamic QR passes, and citizen reward incentives.</p>
     </div>
   </footer>
 
@@ -888,6 +980,6 @@
   <script src="/static/js/firestore-service.js?v=transit-passes-v4"></script>
   <script src="/static/js/cctv_map.js"></script>
   <script src="/static/js/scanner.js"></script>
-  <script src="/static/js/app.js?v=transit-seven-day"></script>
+  <script src="/static/js/app.js?v=taste-skill-v1"></script>
 </body>
 </html>
